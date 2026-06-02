@@ -125,7 +125,7 @@ export async function getSupervisors() {
 }
 
 export async function sendApprovalEmail(swap, supervisors) {
-  const { data, error } = await supabase.functions.invoke('send-approval-email', {
+  const { data, error } = await supabase.functions.invoke('send-approval-email-', {
     body: { swap, supervisors },
   })
   if (error) console.error('Email send error:', error)
