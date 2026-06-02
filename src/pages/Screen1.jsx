@@ -26,6 +26,7 @@ export default function Screen1() {
   const navigate = useNavigate()
   const sigRef = useRef(null)
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   const [form, setForm] = useState({
     weekCommencing: '',
@@ -42,7 +43,7 @@ export default function Screen1() {
       [field]: e.target.type === 'checkbox' ? e.target.checked : e.target.value,
     }))
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setError('')
     if (!form.weekCommencing) { setError('Week Commencing is required'); return }
     if (!form.driverAName.trim()) { setError('Driver A Name is required'); return }
@@ -51,23 +52,23 @@ export default function Screen1() {
     if (!form.driverBDuty.trim()) { setError('Driver B Duty Number is required'); return }
     if (sigRef.current?.isEmpty()) { setError('Driver A signature is required'); return }
 
-    const record = createSwap({
-      weekCommencing: form.weekCommencing,
-      weekType: form.weekType,
-      driverAName: form.driverAName,
-      driverADuty: form.driverADuty,
-      driverBName: form.driverBName,
-      driverBDuty: form.driverBDuty,
-      driverASignature: sigRef.current.toDataURL(),
-      driverASignedDate: new Date().toISOString(),
-      driverBSignature: null,
-      driverBSignedDate: null,
-      supervisorName: null,
-      supervisorSignature: null,
-      supervisorSignedDate: null,
-    })
-
-    navigate(`/screen2?swapId=${record.id}`)
+    setSubmitting(true)
+    try {
+      const record = await createSwap({
+        weekCommencing: form.weekCommencing,
+        weekType: form.weekType,
+        driverAName: form.driverAName,
+        driverADuty: form.driverADuty,
+        driverBName: form.driverBName,
+        driverBDuty: form.driverBDuty,
+        driverASignature: sigRef.current.toDataURL(),
+        driverASignedDate: new Date().toISOString(),
+      })
+      navigate(`/screen2?swapId=${record.id}`)
+    } catch (err) {
+      setError('Failed to save. Please try again.')
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -203,8 +204,8 @@ export default function Screen1() {
           </p>
         )}
 
-        <button onClick={handleSubmit} style={BTN_PRIMARY}>
-          Submit
+        <button onClick={handleSubmit} disabled={submitting} style={{ ...BTN_PRIMARY, opacity: submitting ? 0.6 : 1 }}>
+          {submitting ? 'Saving...' : 'Submit'}
         </button>
 
       </div>

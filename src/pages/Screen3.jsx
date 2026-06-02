@@ -1,9 +1,9 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import SwapTable from '../components/SwapTable'
 import SignaturePad from '../components/SignaturePad'
-import { getSwap, updateSwap } from '../dataService'
+import { getSwap, updateSwap, getSupervisors, sendApprovalEmail } from '../dataService'
 import { formatDate, formatWeekType } from '../utils/helpers'
 import { AP_RED, CARD, FIELD_LABEL, BTN_PRIMARY } from '../theme'
 
@@ -12,10 +12,31 @@ export default function Screen3() {
   const navigate = useNavigate()
   const swapId = searchParams.get('swapId')
 
-  const [swap, setSwap] = useState(() => (swapId ? getSwap(swapId) : null))
+  const [swap, setSwap] = useState(null)
+  const [loading, setLoading] = useState(true)
   const sigRef = useRef(null)
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
+
+  useEffect(() => {
+    if (!swapId) { setLoading(false); return }
+    getSwap(swapId).then(data => {
+      setSwap(data)
+      setLoading(false)
+    })
+  }, [swapId])
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100svh' }}>
+        <Header />
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <p style={{ color: 'var(--subtext-color)', fontSize: 14 }}>Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!swap) {
     return (
@@ -35,18 +56,30 @@ export default function Screen3() {
 
   const alreadySigned = swap.status !== "Awaiting Driver B's Signature"
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (sigRef.current?.isEmpty()) {
       setError('Signature is required')
       return
     }
-    const updated = updateSwap(swapId, {
-      driverBSignature: sigRef.current.toDataURL(),
-      driverBSignedDate: new Date().toISOString(),
-      status: "Awaiting Supervisor's Signature",
-    })
-    setSwap(updated)
-    setDone(true)
+    setSubmitting(true)
+    setError('')
+    try {
+      const updated = await updateSwap(swapId, {
+        driverBSignature: sigRef.current.toDataURL(),
+        driverBSignedDate: new Date().toISOString(),
+        status: "Awaiting Supervisor's Signature",
+      })
+      setSwap(updated)
+
+      // Send approval email to all supervisors
+      const supervisors = await getSupervisors()
+      await sendApprovalEmail(updated, supervisors)
+
+      setDone(true)
+    } catch {
+      setError('Something went wrong. Please try again.')
+      setSubmitting(false)
+    }
   }
 
   const showDone = done || alreadySigned
@@ -82,7 +115,7 @@ export default function Screen3() {
           {showDone ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1.5rem 0', gap: '1.25rem' }}>
               <p style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-color)', textAlign: 'center' }}>
-                ✅ Swap Request Completed!
+                ✅ Signed! Supervisors have been notified.
               </p>
               <button onClick={() => navigate('/screen1')} style={{ ...BTN_PRIMARY, maxWidth: 240 }}>
                 OK
@@ -98,8 +131,8 @@ export default function Screen3() {
                 </p>
               )}
               <div style={{ marginTop: '1rem' }}>
-                <button onClick={handleSubmit} style={BTN_PRIMARY}>
-                  Submit
+                <button onClick={handleSubmit} disabled={submitting} style={{ ...BTN_PRIMARY, opacity: submitting ? 0.6 : 1 }}>
+                  {submitting ? 'Submitting...' : 'Submit'}
                 </button>
               </div>
             </>

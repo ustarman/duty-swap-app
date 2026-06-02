@@ -1,9 +1,8 @@
-const STORAGE_KEY = 'bt-duty-swaps'
+import { supabase } from './lib/supabase'
 
-const SUPERVISORS = [
-  { name: 'Brendon Yun', authorityToSign: true },
-  { name: 'John Smith', authorityToSign: true },
-]
+function generateId() {
+  return Date.now().toString()
+}
 
 function generateRef() {
   const now = new Date()
@@ -16,50 +15,119 @@ function generateRef() {
   return `SWAP-${dd}${mm}${yyyy}-${hh}${min}${ss}`
 }
 
-function load() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch {
-    return []
+// DB row (snake_case) → app object (camelCase)
+function mapToApp(row) {
+  if (!row) return null
+  return {
+    id: row.id,
+    title: row.title,
+    driverAName: row.driver_a_name,
+    driverAPayroll: row.driver_a_payroll,
+    driverADuty: row.driver_a_duty,
+    driverBName: row.driver_b_name,
+    driverBPayroll: row.driver_b_payroll,
+    driverBDuty: row.driver_b_duty,
+    weekCommencing: row.week_commencing,
+    weekType: row.week_type,
+    driverASignature: row.driver_a_signature,
+    driverBSignature: row.driver_b_signature,
+    status: row.status,
+    createdAt: row.created_at,
+    supervisorName: row.supervisor_name,
+    supervisorSignature: row.supervisor_signature,
+    supervisorSignedDate: row.supervisor_signed_date,
   }
 }
 
-function persist(swaps) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(swaps))
-}
-
-export function createSwap(data) {
-  const swaps = load()
+export async function createSwap(data) {
   const record = {
-    id: Date.now().toString(),
+    id: generateId(),
     title: generateRef(),
-    ...data,
+    driver_a_name: data.driverAName,
+    driver_a_payroll: data.driverAPayroll ?? null,
+    driver_a_duty: data.driverADuty,
+    driver_b_name: data.driverBName,
+    driver_b_payroll: data.driverBPayroll ?? null,
+    driver_b_duty: data.driverBDuty,
+    week_commencing: data.weekCommencing,
+    week_type: data.weekType,
+    driver_a_signature: data.driverASignature,
     status: "Awaiting Driver B's Signature",
-    createdAt: new Date().toISOString(),
   }
-  swaps.unshift(record)
-  persist(swaps)
-  return record
+
+  const { data: result, error } = await supabase
+    .from('shift_swap_requests')
+    .insert(record)
+    .select()
+    .single()
+
+  if (error) throw error
+  return mapToApp(result)
 }
 
-export function getSwap(id) {
-  return load().find(s => s.id === id) ?? null
+export async function getSwap(id) {
+  const { data, error } = await supabase
+    .from('shift_swap_requests')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error) return null
+  return mapToApp(data)
 }
 
-export function updateSwap(id, updates) {
-  const swaps = load()
-  const idx = swaps.findIndex(s => s.id === id)
-  if (idx === -1) return null
-  swaps[idx] = { ...swaps[idx], ...updates }
-  persist(swaps)
-  return swaps[idx]
+export async function updateSwap(id, updates) {
+  const dbUpdates = {}
+  if (updates.driverBSignature !== undefined) dbUpdates.driver_b_signature = updates.driverBSignature
+  if (updates.driverBSignedDate !== undefined) dbUpdates.driver_b_signed_date = updates.driverBSignedDate
+  if (updates.status !== undefined) dbUpdates.status = updates.status
+  if (updates.supervisorName !== undefined) dbUpdates.supervisor_name = updates.supervisorName
+  if (updates.supervisorSignature !== undefined) dbUpdates.supervisor_signature = updates.supervisorSignature
+  if (updates.supervisorSignedDate !== undefined) dbUpdates.supervisor_signed_date = updates.supervisorSignedDate
+
+  const { data, error } = await supabase
+    .from('shift_swap_requests')
+    .update(dbUpdates)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return mapToApp(data)
 }
 
-export function getAllSwaps() {
-  return load()
+export async function getAllSwaps() {
+  const { data, error } = await supabase
+    .from('shift_swap_requests')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) return []
+  return data.map(mapToApp)
 }
 
-export function getSupervisors() {
-  return SUPERVISORS
+export async function getSupervisors() {
+  const { data, error } = await supabase
+    .from('supervisors')
+    .select('*')
+    .eq('authority_to_sign', true)
+    .eq('active', true)
+    .order('name')
+
+  if (error) return []
+  return data.map(s => ({
+    id: s.id,
+    name: s.name,
+    email: s.email,
+    role: s.role,
+    authorityToSign: s.authority_to_sign,
+  }))
+}
+
+export async function sendApprovalEmail(swap, supervisors) {
+  const { data, error } = await supabase.functions.invoke('send-approval-email', {
+    body: { swap, supervisors },
+  })
+  if (error) console.error('Email send error:', error)
+  return data
 }

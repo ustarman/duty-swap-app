@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import Header from '../components/Header'
@@ -11,8 +11,29 @@ export default function Screen2() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const swapId = searchParams.get('swapId')
-  const swap = swapId ? getSwap(swapId) : null
+
+  const [swap, setSwap] = useState(null)
+  const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    if (!swapId) { setLoading(false); return }
+    getSwap(swapId).then(data => {
+      setSwap(data)
+      setLoading(false)
+    })
+  }, [swapId])
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100svh' }}>
+        <Header />
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <p style={{ color: 'var(--subtext-color)', fontSize: 14 }}>Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!swap) {
     return (

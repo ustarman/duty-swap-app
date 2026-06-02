@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import StatusBadge from '../components/StatusBadge'
@@ -16,7 +16,15 @@ const FILTERS = [
 export default function Admin() {
   const navigate = useNavigate()
   const [filter, setFilter] = useState('all')
-  const [swaps] = useState(() => getAllSwaps())
+  const [swaps, setSwaps] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getAllSwaps().then(data => {
+      setSwaps(data)
+      setLoading(false)
+    })
+  }, [])
 
   const filtered = filter === 'all' ? swaps : swaps.filter(s => s.status === filter)
 
@@ -66,7 +74,11 @@ export default function Admin() {
         </div>
 
         {/* List */}
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--subtext-color)', fontSize: 14 }}>
+            Loading...
+          </div>
+        ) : filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--subtext-color)', fontSize: 14 }}>
             No swap requests found
           </div>

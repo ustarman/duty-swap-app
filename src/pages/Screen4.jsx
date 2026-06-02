@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import SwapTable from '../components/SwapTable'
@@ -6,8 +6,6 @@ import SignaturePad from '../components/SignaturePad'
 import { getSwap, updateSwap, getSupervisors } from '../dataService'
 import { formatDate, formatWeekType } from '../utils/helpers'
 import { AP_RED, CARD, INPUT_BOX, INPUT_LABEL, INPUT_STYLE, FIELD_LABEL, BTN_PRIMARY } from '../theme'
-
-const SUPERVISORS = getSupervisors()
 
 function SigThumb({ label, src }) {
   return (
@@ -35,11 +33,38 @@ export default function Screen4() {
   const navigate = useNavigate()
   const swapId = searchParams.get('swapId')
 
-  const [swap, setSwap] = useState(() => (swapId ? getSwap(swapId) : null))
+  const [swap, setSwap] = useState(null)
+  const [supervisors, setSupervisors] = useState([])
+  const [loading, setLoading] = useState(true)
   const sigRef = useRef(null)
   const [supervisorName, setSupervisorName] = useState('')
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
   const [approved, setApproved] = useState(false)
+
+  useEffect(() => {
+    const load = async () => {
+      const [swapData, supervisorData] = await Promise.all([
+        swapId ? getSwap(swapId) : null,
+        getSupervisors(),
+      ])
+      setSwap(swapData)
+      setSupervisors(supervisorData)
+      setLoading(false)
+    }
+    load()
+  }, [swapId])
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100svh' }}>
+        <Header />
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <p style={{ color: 'var(--subtext-color)', fontSize: 14 }}>Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   if (!swap) {
     return (
@@ -52,18 +77,25 @@ export default function Screen4() {
     )
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setError('')
     if (!supervisorName) { setError('Please select a supervisor'); return }
     if (sigRef.current?.isEmpty()) { setError('Signature is required'); return }
-    const updated = updateSwap(swapId, {
-      supervisorName,
-      supervisorSignature: sigRef.current.toDataURL(),
-      supervisorSignedDate: new Date().toISOString(),
-      status: 'Completed',
-    })
-    setSwap(updated)
-    setApproved(true)
+
+    setSubmitting(true)
+    try {
+      const updated = await updateSwap(swapId, {
+        supervisorName,
+        supervisorSignature: sigRef.current.toDataURL(),
+        supervisorSignedDate: new Date().toISOString(),
+        status: 'Completed',
+      })
+      setSwap(updated)
+      setApproved(true)
+    } catch {
+      setError('Something went wrong. Please try again.')
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -133,8 +165,8 @@ export default function Screen4() {
                     style={{ ...INPUT_STYLE, cursor: 'pointer' }}
                   >
                     <option value="">— Select Supervisor —</option>
-                    {SUPERVISORS.filter(s => s.authorityToSign).map(s => (
-                      <option key={s.name} value={s.name}>{s.name}</option>
+                    {supervisors.map(s => (
+                      <option key={s.id} value={s.name}>{s.name}</option>
                     ))}
                   </select>
                 </div>
@@ -151,8 +183,8 @@ export default function Screen4() {
                 </p>
               )}
 
-              <button onClick={handleSubmit} style={BTN_PRIMARY}>
-                Submit
+              <button onClick={handleSubmit} disabled={submitting} style={{ ...BTN_PRIMARY, opacity: submitting ? 0.6 : 1 }}>
+                {submitting ? 'Submitting...' : 'Submit'}
               </button>
             </>
           )}
