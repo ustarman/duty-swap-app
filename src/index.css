@@ -43,6 +43,41 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   opacity: 0.7;
   padding: 2px;
 }
+
+/* react-datepicker custom styles */
+.react-datepicker {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  border: 1px solid var(--card-border) !important;
+  border-radius: 10px !important;
+  background: var(--card-bg) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+.react-datepicker__header {
+  background: var(--card-bg) !important;
+  border-bottom: 1px solid var(--divider-color) !important;
+  border-radius: 10px 10px 0 0 !important;
+}
+.react-datepicker__current-month,
+.react-datepicker__day-name,
+.react-datepicker__day {
+  color: var(--text-color) !important;
+}
+.react-datepicker__day:hover {
+  background: var(--input-bg) !important;
+  border-radius: 6px !important;
+}
+.react-datepicker__day--selected {
+  background: #E11B22 !important;
+  border-radius: 6px !important;
+  color: white !important;
+}
+.react-datepicker__day--today {
+  font-weight: 700;
+}
+.react-datepicker__navigation-icon::before {
+  border-color: var(--text-color) !important;
+}
+.react-datepicker__triangle { display: none; }
 ::-webkit-scrollbar { display: none; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;

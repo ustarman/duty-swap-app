@@ -1,5 +1,7 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
 import Header from '../components/Header'
 import SectionDivider from '../components/SectionDivider'
 import SignaturePad from '../components/SignaturePad'
@@ -29,7 +31,7 @@ export default function Screen1() {
   const [submitting, setSubmitting] = useState(false)
 
   const [form, setForm] = useState({
-    weekCommencing: '',
+    weekCommencing: null,
     weekType: null,
     driverAName: '',
     driverADuty: '',
@@ -46,6 +48,7 @@ export default function Screen1() {
   const handleSubmit = async () => {
     setError('')
     if (!form.weekCommencing) { setError('Week Commencing is required'); return }
+
     if (!form.driverAName.trim()) { setError('Driver A Name is required'); return }
     if (!form.driverADuty.trim()) { setError('Driver A Duty Number is required'); return }
     if (!form.driverBName.trim()) { setError('Driver B Name is required'); return }
@@ -55,7 +58,7 @@ export default function Screen1() {
     setSubmitting(true)
     try {
       const record = await createSwap({
-        weekCommencing: form.weekCommencing,
+        weekCommencing: form.weekCommencing ? form.weekCommencing.toISOString().slice(0, 10) : '',
         weekType: form.weekType,
         driverAName: form.driverAName,
         driverADuty: form.driverADuty,
@@ -84,11 +87,15 @@ export default function Screen1() {
               <span style={{ fontSize: 11, color: 'var(--input-label-color)', fontWeight: 600, letterSpacing: '0.5px', display: 'block', marginBottom: 4 }}>
                 DATE
               </span>
-              <input
-                type="date"
-                value={form.weekCommencing}
-                onChange={set('weekCommencing')}
-                style={INPUT_STYLE}
+              <DatePicker
+                selected={form.weekCommencing}
+                onChange={date => setForm(prev => ({ ...prev, weekCommencing: date }))}
+                calendarStartDay={0}
+                dateFormat="dd/MM/yyyy"
+                placeholderText="dd/mm/yyyy"
+                customInput={<input style={{ ...INPUT_STYLE, width: '100%' }} />}
+                popperPlacement="bottom-start"
+                showPopperArrow={false}
               />
             </InputBox>
           </FieldGroup>
