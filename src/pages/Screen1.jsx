@@ -93,7 +93,7 @@ export default function Screen1() {
                 calendarStartDay={0}
                 dateFormat="dd/MM/yyyy"
                 placeholderText="dd/mm/yyyy"
-                customInput={<input readOnly style={{ ...INPUT_STYLE, width: '100%', cursor: 'pointer' }} />}
+                customInput={<input readOnly inputMode="none" style={{ ...INPUT_STYLE, width: '100%', cursor: 'pointer' }} />}
                 withPortal
               />
             </InputBox>
