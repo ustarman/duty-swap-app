@@ -93,9 +93,8 @@ export default function Screen1() {
                 calendarStartDay={0}
                 dateFormat="dd/MM/yyyy"
                 placeholderText="dd/mm/yyyy"
-                customInput={<input style={{ ...INPUT_STYLE, width: '100%' }} />}
-                popperPlacement="bottom-start"
-                showPopperArrow={false}
+                customInput={<input readOnly style={{ ...INPUT_STYLE, width: '100%', cursor: 'pointer' }} />}
+                withPortal
               />
             </InputBox>
           </FieldGroup>
