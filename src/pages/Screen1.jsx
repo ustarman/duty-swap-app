@@ -152,7 +152,7 @@ export default function Screen1() {
                 value={form.driverADuty}
                 onChange={set('driverADuty')}
                 style={INPUT_STYLE}
-                placeholder="e.g. BT001 or RDO/Spare"
+                placeholder="e.g. BT100 or RDO/Spare"
               />
             </InputBox>
           </FieldGroup>
@@ -192,7 +192,7 @@ export default function Screen1() {
                 value={form.driverBDuty}
                 onChange={set('driverBDuty')}
                 style={INPUT_STYLE}
-                placeholder="e.g. BT002 or RDO/Spare"
+                placeholder="e.g. BT135 or RDO/Spare"
               />
             </InputBox>
           </FieldGroup>
