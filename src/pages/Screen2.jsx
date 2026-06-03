@@ -105,23 +105,46 @@ export default function Screen2() {
 
           <p style={{ textAlign: 'center', fontSize: 13, fontWeight: 700, color: 'var(--subtext-color)', marginBottom: '0.75rem' }}>OR</p>
 
-          <button
-            onClick={copyLink}
-            style={{
-              width: '100%',
-              padding: '14px',
-              background: copied ? '#2e7d32' : AP_RED,
-              color: 'white',
-              border: 'none',
-              borderRadius: 8,
-              fontSize: 15,
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'background 0.2s',
-            }}
-          >
-            {copied ? '✓ Copied!' : 'Copy Link'}
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <button
+              onClick={copyLink}
+              style={{
+                width: '100%',
+                padding: '14px',
+                background: copied ? '#2e7d32' : AP_RED,
+                color: 'white',
+                border: 'none',
+                borderRadius: 8,
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'background 0.2s',
+              }}
+            >
+              {copied ? '✓ Copied!' : 'Copy Link'}
+            </button>
+
+            <a
+              href={`sms:?&body=${encodeURIComponent(`Please sign the duty swap request: ${screen3Url}`)}`}
+              style={{
+                display: 'block',
+                width: '100%',
+                padding: '14px',
+                background: '#1a73e8',
+                color: 'white',
+                border: 'none',
+                borderRadius: 8,
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: 'pointer',
+                textAlign: 'center',
+                textDecoration: 'none',
+                boxSizing: 'border-box',
+              }}
+            >
+              📱 Send SMS
+            </a>
+          </div>
         </div>
       </div>
     </div>
