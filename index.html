@@ -4,11 +4,46 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/duty-swap-app/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>duty-swap-app</title>
-    <script type="module" crossorigin src="/duty-swap-app/assets/index-Dbyy4Ise.js"></script>
-    <link rel="stylesheet" crossorigin href="/duty-swap-app/assets/index-r3pgPSpj.css">
+    <link rel="manifest" href="/duty-swap-app/manifest.json" />
+    <title>Duty Swap</title>
+    <style>
+      #landscape-warning {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: #E11B22;
+        color: white;
+        z-index: 9999;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        text-align: center;
+        padding: 2rem;
+      }
+      #landscape-warning svg {
+        animation: rotate 2s ease-in-out infinite;
+      }
+      @keyframes rotate {
+        0%, 100% { transform: rotate(0deg); }
+        50% { transform: rotate(90deg); }
+      }
+      @media (orientation: landscape) and (max-height: 500px) {
+        #landscape-warning { display: flex; }
+      }
+    </style>
+    <script type="module" crossorigin src="/duty-swap-app/assets/index-sCUuCBoE.js"></script>
+    <link rel="stylesheet" crossorigin href="/duty-swap-app/assets/index-CUXy8s-f.css">
   </head>
   <body>
+    <div id="landscape-warning">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="5" y="2" width="14" height="20" rx="2"/>
+        <line x1="12" y1="18" x2="12" y2="18.01"/>
+      </svg>
+      <p style="font-size:18px;font-weight:700;margin:0">세로 모드로 돌려주세요</p>
+      <p style="font-size:14px;margin:0;opacity:0.85">Please rotate your device to portrait mode</p>
+    </div>
     <div id="root"></div>
   </body>
 </html>
