@@ -124,10 +124,29 @@ export async function getSupervisors() {
   }))
 }
 
+export async function getAllActiveRecipients() {
+  const { data, error } = await supabase
+    .from('supervisors')
+    .select('*')
+    .eq('active', true)
+    .order('name')
+
+  if (error) return []
+  return data.map(s => ({ name: s.name, email: s.email }))
+}
+
 export async function sendApprovalEmail(swap, supervisors) {
   const { data, error } = await supabase.functions.invoke('send-approval-email-', {
-    body: { swap, supervisors },
+    body: { type: 'approval', swap, supervisors },
   })
-  if (error) console.error('Email send error:', error)
+  if (error) console.error('Approval email error:', error)
+  return data
+}
+
+export async function sendCompletionEmail(swap, recipients) {
+  const { data, error } = await supabase.functions.invoke('send-approval-email-', {
+    body: { type: 'completion', swap, supervisors: recipients },
+  })
+  if (error) console.error('Completion email error:', error)
   return data
 }

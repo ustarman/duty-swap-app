@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import SwapTable from '../components/SwapTable'
 import SignaturePad from '../components/SignaturePad'
-import { getSwap, updateSwap, getSupervisors } from '../dataService'
+import { getSwap, updateSwap, getSupervisors, getAllActiveRecipients, sendCompletionEmail } from '../dataService'
 import { formatDate, formatWeekType } from '../utils/helpers'
 import { AP_RED, CARD, INPUT_BOX, INPUT_LABEL, INPUT_STYLE, FIELD_LABEL, BTN_PRIMARY } from '../theme'
 
@@ -91,6 +91,11 @@ export default function Screen4() {
         status: 'Completed',
       })
       setSwap(updated)
+
+      // Send completion email to all active recipients
+      const recipients = await getAllActiveRecipients()
+      await sendCompletionEmail(updated, recipients)
+
       setApproved(true)
     } catch {
       setError('Something went wrong. Please try again.')
@@ -225,8 +230,8 @@ export default function Screen4() {
                 </div>
               )}
 
-              <button onClick={() => navigate('/admin')} style={BTN_PRIMARY}>
-                Back to Admin
+              <button onClick={() => navigate('/admin')} style={{ ...BTN_PRIMARY, background: 'var(--card-border)', color: 'var(--text-color)' }}>
+                View All Requests
               </button>
             </>
           )}
