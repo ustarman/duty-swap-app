@@ -16,6 +16,7 @@ const FILTERS = [
 export default function Admin() {
   const navigate = useNavigate()
   const [filter, setFilter] = useState('all')
+  const [search, setSearch] = useState('')
   const [swaps, setSwaps] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -26,7 +27,17 @@ export default function Admin() {
     })
   }, [])
 
-  const filtered = filter === 'all' ? swaps : swaps.filter(s => s.status === filter)
+  const filtered = swaps
+    .filter(s => filter === 'all' || s.status === filter)
+    .filter(s => {
+      if (!search.trim()) return true
+      const q = search.toLowerCase()
+      return (
+        s.driverAName?.toLowerCase().includes(q) ||
+        s.driverBName?.toLowerCase().includes(q) ||
+        s.title?.toLowerCase().includes(q)
+      )
+    })
 
   const handleCardClick = swap => {
     if (swap.status === "Awaiting Driver B's Signature") {
@@ -44,6 +55,34 @@ export default function Admin() {
         <p style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-color)', marginBottom: '0.75rem' }}>
           Swap Requests
         </p>
+
+        {/* Search */}
+        <div style={{ position: 'relative', marginBottom: '0.75rem' }}>
+          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 16, color: 'var(--subtext-color)' }}>🔍</span>
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search by name..."
+            style={{
+              width: '100%',
+              padding: '11px 12px 11px 36px',
+              border: '1.5px solid var(--card-border)',
+              borderRadius: 8,
+              background: 'var(--card-bg)',
+              color: 'var(--text-color)',
+              fontSize: 14,
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--subtext-color)', fontSize: 16 }}
+            >✕</button>
+          )}
+        </div>
 
         {/* Filter tabs */}
         <div style={{ display: 'flex', gap: 6, marginBottom: '1rem', flexWrap: 'wrap' }}>
