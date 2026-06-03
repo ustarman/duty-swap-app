@@ -196,13 +196,13 @@ export default function Screen4() {
 
           {/* Just approved this session */}
           {approved && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1.5rem 0', gap: '1.25rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1.5rem 0', gap: '1rem' }}>
               <p style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-color)', textAlign: 'center' }}>
                 ✅ Swap Request Approved!
               </p>
-              <button onClick={() => navigate('/screen1')} style={{ ...BTN_PRIMARY, maxWidth: 240 }}>
-                OK
-              </button>
+              <p style={{ fontSize: 14, color: 'var(--subtext-color)', textAlign: 'center', lineHeight: 1.6 }}>
+                승인이 완료 되었습니다.{'\n'}이제 앱을 종료해 주시면 됩니다.
+              </p>
             </div>
           )}
 
@@ -230,8 +230,8 @@ export default function Screen4() {
                 </div>
               )}
 
-              <button onClick={() => navigate('/admin')} style={{ ...BTN_PRIMARY, background: 'var(--card-border)', color: 'var(--text-color)' }}>
-                View All Requests
+              <button onClick={() => navigate('/admin')} style={BTN_PRIMARY}>
+                Back to Admin
               </button>
             </>
           )}
