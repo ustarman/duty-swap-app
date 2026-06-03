@@ -158,11 +158,6 @@ export default function Admin() {
           </div>
         )}
 
-        <div style={{ marginTop: '1.5rem' }}>
-          <button onClick={() => navigate('/screen1')} style={BTN_PRIMARY}>
-            + New Swap Request
-          </button>
-        </div>
       </div>
     </div>
   )
