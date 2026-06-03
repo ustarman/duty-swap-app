@@ -4,7 +4,7 @@ import Header from '../components/Header'
 import StatusBadge from '../components/StatusBadge'
 import { getAllSwaps } from '../dataService'
 import { formatDate, formatWeekType } from '../utils/helpers'
-import { AP_RED, CARD, BTN_PRIMARY } from '../theme'
+import { AP_RED } from '../theme'
 
 const FILTERS = [
   { label: 'All', value: 'all' },
@@ -12,6 +12,28 @@ const FILTERS = [
   { label: 'Awaiting Supervisor', value: "Awaiting Supervisor's Signature" },
   { label: 'Completed', value: 'Completed' },
 ]
+
+const TH = {
+  padding: '10px 12px',
+  textAlign: 'left',
+  fontSize: 12,
+  fontWeight: 700,
+  color: 'var(--label-color)',
+  whiteSpace: 'nowrap',
+  borderBottom: '2px solid var(--divider-color)',
+  background: 'var(--card-bg)',
+  position: 'sticky',
+  top: 0,
+}
+
+const TD = {
+  padding: '10px 12px',
+  fontSize: 13,
+  color: 'var(--text-color)',
+  whiteSpace: 'nowrap',
+  borderBottom: '1px solid var(--divider-color)',
+  verticalAlign: 'middle',
+}
 
 export default function Admin() {
   const navigate = useNavigate()
@@ -39,7 +61,7 @@ export default function Admin() {
       )
     })
 
-  const handleCardClick = swap => {
+  const handleRowClick = swap => {
     if (swap.status === "Awaiting Driver B's Signature") {
       navigate(`/screen2?swapId=${swap.id}`)
     } else {
@@ -58,7 +80,7 @@ export default function Admin() {
 
         {/* Search */}
         <div style={{ position: 'relative', marginBottom: '0.75rem' }}>
-          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 16, color: 'var(--subtext-color)' }}>🔍</span>
+          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 15, color: 'var(--subtext-color)' }}>🔍</span>
           <input
             type="text"
             value={search}
@@ -66,7 +88,7 @@ export default function Admin() {
             placeholder="Search by name..."
             style={{
               width: '100%',
-              padding: '11px 12px 11px 36px',
+              padding: '10px 12px 10px 36px',
               border: '1.5px solid var(--card-border)',
               borderRadius: 8,
               background: 'var(--card-bg)',
@@ -77,10 +99,7 @@ export default function Admin() {
             }}
           />
           {search && (
-            <button
-              onClick={() => setSearch('')}
-              style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--subtext-color)', fontSize: 16 }}
-            >✕</button>
+            <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--subtext-color)', fontSize: 16 }}>✕</button>
           )}
         </div>
 
@@ -102,7 +121,6 @@ export default function Admin() {
                   fontSize: 12,
                   fontWeight: 600,
                   cursor: 'pointer',
-                  transition: 'all 0.15s',
                   whiteSpace: 'nowrap',
                 }}
               >
@@ -112,52 +130,55 @@ export default function Admin() {
           })}
         </div>
 
-        {/* List */}
+        {/* Table */}
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--subtext-color)', fontSize: 14 }}>
-            Loading...
-          </div>
+          <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--subtext-color)', fontSize: 14 }}>Loading...</div>
         ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--subtext-color)', fontSize: 14 }}>
-            No swap requests found
-          </div>
+          <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--subtext-color)', fontSize: 14 }}>No swap requests found</div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {filtered.map(swap => (
-              <button
-                key={swap.id}
-                onClick={() => handleCardClick(swap)}
-                style={{
-                  ...CARD,
-                  marginBottom: 0,
-                  textAlign: 'left',
-                  border: `0.5px solid var(--card-border)`,
-                  cursor: 'pointer',
-                  width: '100%',
-                }}
-              >
-                <p style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-color)', marginBottom: 4 }}>
-                  {swap.title}
-                </p>
-                <p style={{ fontSize: 13, color: 'var(--text-color)', marginBottom: 2 }}>
-                  {swap.driverAName}{' '}
-                  <span style={{ color: 'var(--subtext-color)' }}>(Duty {swap.driverADuty})</span>
-                  {' ↔ '}
-                  {swap.driverBName}{' '}
-                  <span style={{ color: 'var(--subtext-color)' }}>(Duty {swap.driverBDuty})</span>
-                </p>
-                <p style={{ fontSize: 12, color: 'var(--subtext-color)', marginBottom: 8 }}>
-                  Week of {formatDate(swap.weekCommencing)}
-                  {formatWeekType(swap) !== 'Full Week' && (
-                    <span style={{ marginLeft: 6, color: '#d97706', fontWeight: 700 }}>• {formatWeekType(swap)}</span>
-                  )}
-                </p>
-                <StatusBadge status={swap.status} />
-              </button>
-            ))}
+          <div style={{ overflowX: 'auto', border: '0.5px solid var(--card-border)', borderRadius: 10, background: 'var(--card-bg)' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 700 }}>
+              <thead>
+                <tr>
+                  <th style={TH}>Reference</th>
+                  <th style={TH}>Driver A</th>
+                  <th style={TH}>Duty A</th>
+                  <th style={TH}>Driver B</th>
+                  <th style={TH}>Duty B</th>
+                  <th style={TH}>Week</th>
+                  <th style={TH}>Week Type</th>
+                  <th style={TH}>Status</th>
+                  <th style={TH}>Supervisor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((swap, i) => (
+                  <tr
+                    key={swap.id}
+                    onClick={() => handleRowClick(swap)}
+                    style={{
+                      cursor: 'pointer',
+                      background: i % 2 === 0 ? 'var(--card-bg)' : 'var(--input-bg)',
+                      transition: 'opacity 0.1s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = '0.75'}
+                    onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                  >
+                    <td style={{ ...TD, fontWeight: 700, fontSize: 12, color: AP_RED }}>{swap.title}</td>
+                    <td style={TD}>{swap.driverAName}</td>
+                    <td style={{ ...TD, color: 'var(--subtext-color)' }}>{swap.driverADuty}</td>
+                    <td style={TD}>{swap.driverBName}</td>
+                    <td style={{ ...TD, color: 'var(--subtext-color)' }}>{swap.driverBDuty}</td>
+                    <td style={TD}>{formatDate(swap.weekCommencing)}</td>
+                    <td style={{ ...TD, color: 'var(--subtext-color)' }}>{formatWeekType(swap)}</td>
+                    <td style={TD}><StatusBadge status={swap.status} /></td>
+                    <td style={{ ...TD, color: 'var(--subtext-color)' }}>{swap.supervisorName || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
-
       </div>
     </div>
   )
