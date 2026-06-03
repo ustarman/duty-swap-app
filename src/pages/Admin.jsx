@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import StatusBadge from '../components/StatusBadge'
 import { getAllSwaps } from '../dataService'
@@ -36,7 +35,6 @@ const TD = {
 }
 
 export default function Admin() {
-  const navigate = useNavigate()
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [swaps, setSwaps] = useState([])
@@ -61,13 +59,6 @@ export default function Admin() {
       )
     })
 
-  const handleRowClick = swap => {
-    if (swap.status === "Awaiting Driver B's Signature") {
-      navigate(`/screen2?swapId=${swap.id}`)
-    } else {
-      navigate(`/screen4?swapId=${swap.id}`)
-    }
-  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100svh' }}>
@@ -155,14 +146,7 @@ export default function Admin() {
                 {filtered.map((swap, i) => (
                   <tr
                     key={swap.id}
-                    onClick={() => handleRowClick(swap)}
-                    style={{
-                      cursor: 'pointer',
-                      background: i % 2 === 0 ? 'var(--card-bg)' : 'var(--input-bg)',
-                      transition: 'opacity 0.1s',
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.opacity = '0.75'}
-                    onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                    style={{ background: i % 2 === 0 ? 'var(--card-bg)' : 'var(--input-bg)' }}
                   >
                     <td style={{ ...TD, fontWeight: 700, fontSize: 12, color: AP_RED }}>{swap.title}</td>
                     <td style={TD}>{swap.driverAName}</td>
