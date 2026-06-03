@@ -1,0 +1,10 @@
+{
+  "name": "Duty Swap",
+  "short_name": "Duty Swap",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f4f4",
+  "theme_color": "#E11B22",
+  "start_url": "/duty-swap-app/",
+  "icons": []
+}
