@@ -231,7 +231,7 @@ export default function Screen4() {
               )}
 
               <button onClick={() => navigate('/admin')} style={BTN_PRIMARY}>
-                Back to Admin
+                View more details
               </button>
             </>
           )}
