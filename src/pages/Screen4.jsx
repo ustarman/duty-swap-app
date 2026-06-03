@@ -201,7 +201,7 @@ export default function Screen4() {
                 ✅ Swap Request Approved!
               </p>
               <p style={{ fontSize: 14, color: 'var(--subtext-color)', textAlign: 'center', lineHeight: 1.6 }}>
-                승인이 완료 되었습니다.{'\n'}이제 앱을 종료해 주시면 됩니다.
+                The approval has been completed.{'\n'}You may now close this app.
               </p>
             </div>
           )}
