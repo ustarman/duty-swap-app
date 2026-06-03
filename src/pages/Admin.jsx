@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import StatusBadge from '../components/StatusBadge'
 import { getAllSwaps } from '../dataService'
@@ -35,6 +36,7 @@ const TD = {
 }
 
 export default function Admin() {
+  const navigate = useNavigate()
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [swaps, setSwaps] = useState([])
@@ -140,6 +142,7 @@ export default function Admin() {
                   <th style={TH}>Week Type</th>
                   <th style={TH}>Status</th>
                   <th style={TH}>Supervisor</th>
+                  <th style={TH}></th>
                 </tr>
               </thead>
               <tbody>
@@ -157,6 +160,24 @@ export default function Admin() {
                     <td style={{ ...TD, color: 'var(--subtext-color)' }}>{formatWeekType(swap)}</td>
                     <td style={TD}><StatusBadge status={swap.status} /></td>
                     <td style={{ ...TD, color: 'var(--subtext-color)' }}>{swap.supervisorName || '—'}</td>
+                    <td style={TD}>
+                      <button
+                        onClick={() => navigate(`/screen4?swapId=${swap.id}`)}
+                        style={{
+                          padding: '4px 10px',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          border: `1px solid ${AP_RED}`,
+                          borderRadius: 6,
+                          background: 'transparent',
+                          color: AP_RED,
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        View
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
