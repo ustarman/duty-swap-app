@@ -25,12 +25,25 @@ const EMPTY_FORM = {
 }
 
 function getInitialForm() {
+  // 1. URL params — works in both browser tabs and PWA context
+  const params = new URLSearchParams(window.location.search)
+  const wc = params.get('weekCommencing')
+  if (wc || params.get('driverAName')) {
+    return {
+      weekCommencing: wc ? new Date(wc + 'T12:00:00') : null,
+      weekType: params.get('weekType') || null,
+      driverAName: params.get('driverAName') || '',
+      driverADuty: params.get('driverADuty') || '',
+      driverBName: params.get('driverBName') || '',
+      driverBDuty: '',
+    }
+  }
+  // 2. localStorage — fallback for same-origin browser tabs
   try {
     const stored = localStorage.getItem('dutySwapPrefill')
     if (stored) {
       const data = JSON.parse(stored)
       localStorage.removeItem('dutySwapPrefill')
-      // Ignore stale data older than 2 minutes
       if (data._ts && Date.now() - data._ts > 2 * 60 * 1000) return EMPTY_FORM
       return {
         weekCommencing: data.weekCommencing ? new Date(data.weekCommencing + 'T12:00:00') : null,
