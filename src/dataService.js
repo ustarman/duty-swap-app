@@ -30,13 +30,29 @@ function mapToApp(row) {
     weekCommencing: row.week_commencing,
     weekType: row.week_type,
     driverASignature: row.driver_a_signature,
+    driverASignedDate: row.driver_a_signed_date,
     driverBSignature: row.driver_b_signature,
+    driverBSignedDate: row.driver_b_signed_date,
     status: row.status,
     createdAt: row.created_at,
     supervisorName: row.supervisor_name,
     supervisorSignature: row.supervisor_signature,
     supervisorSignedDate: row.supervisor_signed_date,
   }
+}
+
+export async function findDuplicateSwap(driverAName, driverADuty, weekCommencing) {
+  const { data, error } = await supabase
+    .from('shift_swap_requests')
+    .select('id, title, status')
+    .ilike('driver_a_name', driverAName.trim())
+    .ilike('driver_a_duty', driverADuty.trim())
+    .eq('week_commencing', weekCommencing)
+    .limit(1)
+    .maybeSingle()
+
+  if (error) return null
+  return data ? mapToApp(data) : null
 }
 
 export async function createSwap(data) {
@@ -52,6 +68,7 @@ export async function createSwap(data) {
     week_commencing: data.weekCommencing,
     week_type: data.weekType,
     driver_a_signature: data.driverASignature,
+    driver_a_signed_date: data.driverASignedDate,
     status: "Awaiting Driver B's Signature",
   }
 
@@ -122,6 +139,53 @@ export async function getSupervisors() {
     role: s.role,
     authorityToSign: s.authority_to_sign,
   }))
+}
+
+export async function getAllSupervisors() {
+  const { data, error } = await supabase
+    .from('supervisors')
+    .select('*')
+    .order('name')
+  if (error) return []
+  return data.map(s => ({
+    id: s.id,
+    name: s.name,
+    email: s.email,
+    role: s.role,
+    authorityToSign: s.authority_to_sign,
+    active: s.active,
+  }))
+}
+
+export async function addSupervisor(data) {
+  const { data: result, error } = await supabase
+    .from('supervisors')
+    .insert({
+      name: data.name,
+      email: data.email,
+      role: data.role ?? null,
+      authority_to_sign: data.authorityToSign ?? false,
+      active: true,
+    })
+    .select()
+    .single()
+  if (error) throw error
+  return result
+}
+
+export async function updateSupervisor(id, updates) {
+  const dbUpdates = {}
+  if (updates.authorityToSign !== undefined) dbUpdates.authority_to_sign = updates.authorityToSign
+  if (updates.active !== undefined) dbUpdates.active = updates.active
+  if (updates.name !== undefined) dbUpdates.name = updates.name
+  if (updates.email !== undefined) dbUpdates.email = updates.email
+  const { error } = await supabase.from('supervisors').update(dbUpdates).eq('id', id)
+  if (error) throw error
+}
+
+export async function deleteSupervisor(id) {
+  const { error } = await supabase.from('supervisors').delete().eq('id', id)
+  if (error) throw error
 }
 
 export async function getAllActiveRecipients() {
