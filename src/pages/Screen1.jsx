@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import Header from '../components/Header'
@@ -26,17 +26,22 @@ function FieldGroup({ label, children }) {
 
 export default function Screen1() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const sigRef = useRef(null)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  const [form, setForm] = useState({
-    weekCommencing: null,
-    weekType: null,
-    driverAName: '',
-    driverADuty: '',
-    driverBName: '',
-    driverBDuty: '',
+  const [form, setForm] = useState(() => {
+    // Pre-fill from URL params if coming from Swap Board
+    const wc = searchParams.get('weekCommencing')
+    return {
+      weekCommencing: wc ? new Date(wc) : null,
+      weekType: searchParams.get('weekType') || null,
+      driverAName: searchParams.get('driverAName') || '',
+      driverADuty: searchParams.get('driverADuty') || '',
+      driverBName: searchParams.get('driverBName') || '',
+      driverBDuty: searchParams.get('driverBDuty') || '',
+    }
   })
 
   const set = field => e =>
