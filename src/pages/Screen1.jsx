@@ -35,7 +35,7 @@ function getInitialForm() {
       driverAName: params.get('driverAName') || '',
       driverADuty: params.get('driverADuty') || '',
       driverBName: params.get('driverBName') || '',
-      driverBDuty: '',
+      driverBDuty: params.get('driverBDuty') || '',
     }
   }
   // 2. localStorage — fallback for same-origin browser tabs
@@ -51,7 +51,7 @@ function getInitialForm() {
         driverAName: data.driverAName || '',
         driverADuty: data.driverADuty || '',
         driverBName: data.driverBName || '',
-        driverBDuty: '',
+        driverBDuty: data.driverBDuty || '',
       }
     }
   } catch {}
