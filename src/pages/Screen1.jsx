@@ -6,7 +6,7 @@ import Header from '../components/Header'
 import SectionDivider from '../components/SectionDivider'
 import SignaturePad from '../components/SignaturePad'
 import InputBox from '../components/InputBox'
-import { createSwap } from '../dataService'
+import { createSwap, findDuplicateSwap } from '../dataService'
 import { AP_RED, CARD, INPUT_STYLE, FIELD_LABEL, BTN_PRIMARY } from '../theme'
 
 const WEEK_TYPES = [
@@ -14,6 +14,19 @@ const WEEK_TYPES = [
   { label: 'Sun to Fri', value: 'sun-fri' },
   { label: 'Mon to Fri', value: 'mon-fri' },
 ]
+
+function getInitialForm() {
+  const params = new URLSearchParams(window.location.search)
+  const wc = params.get('weekCommencing')
+  return {
+    weekCommencing: wc ? new Date(wc + 'T12:00:00') : null,
+    weekType: params.get('weekType') || null,
+    driverAName: params.get('driverAName') || '',
+    driverADuty: params.get('driverADuty') || '',
+    driverBName: params.get('driverBName') || '',
+    driverBDuty: params.get('driverBDuty') || '',
+  }
+}
 
 function FieldGroup({ label, children }) {
   return (
@@ -29,35 +42,7 @@ export default function Screen1() {
   const sigRef = useRef(null)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
-
-  const [form, setForm] = useState({
-    weekCommencing: null,
-    weekType: null,
-    driverAName: '',
-    driverADuty: '',
-    driverBName: '',
-    driverBDuty: '',
-  })
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const wc = params.get('weekCommencing')
-    const weekType = params.get('weekType')
-    const driverAName = params.get('driverAName')
-    const driverADuty = params.get('driverADuty')
-    const driverBName = params.get('driverBName')
-
-    if (wc || weekType || driverAName) {
-      setForm(prev => ({
-        ...prev,
-        weekCommencing: wc ? new Date(wc + 'T12:00:00') : prev.weekCommencing,
-        weekType: weekType || prev.weekType,
-        driverAName: driverAName || prev.driverAName,
-        driverADuty: driverADuty || prev.driverADuty,
-        driverBName: driverBName || prev.driverBName,
-      }))
-    }
-  }, [])
+  const [form, setForm] = useState(getInitialForm)
 
   const set = field => e =>
     setForm(prev => ({
@@ -77,8 +62,16 @@ export default function Screen1() {
 
     setSubmitting(true)
     try {
+      const weekStr = form.weekCommencing.toISOString().slice(0, 10)
+      const duplicate = await findDuplicateSwap(form.driverAName, form.driverADuty, weekStr)
+      if (duplicate) {
+        setError(`A swap request for duty ${duplicate.driverADuty} on this week already exists (Ref: ${duplicate.title}, Status: ${duplicate.status}). Please check with your supervisor or admin.`)
+        setSubmitting(false)
+        return
+      }
+
       const record = await createSwap({
-        weekCommencing: form.weekCommencing ? form.weekCommencing.toISOString().slice(0, 10) : '',
+        weekCommencing: weekStr,
         weekType: form.weekType,
         driverAName: form.driverAName,
         driverADuty: form.driverADuty,
