@@ -1,15 +1,21 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <script>
-    var l = window.location;
-    l.replace(
-      l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
-      l.pathname.split('/').slice(0, 2).join('/') +
-      '/?p=' + encodeURIComponent(l.pathname.slice(1) + l.search) +
-      (l.hash || '')
-    );
-  </script>
-</head>
+<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/duty-swap-app/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="manifest" href="/duty-swap-app/manifest.json" />
+    <link rel="apple-touch-icon" href="/duty-swap-app/icon.jpg" />
+    <title>Duty Swap</title>
+    <script>
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('portrait').catch(function() {});
+      }
+    </script>
+    <script type="module" crossorigin src="/duty-swap-app/assets/index-Df321RfZ.js"></script>
+    <link rel="stylesheet" crossorigin href="/duty-swap-app/assets/index-BUk3Yy-Y.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
 </html>
