@@ -16,15 +16,28 @@ const WEEK_TYPES = [
 ]
 
 function getInitialForm() {
-  const params = new URLSearchParams(window.location.search)
-  const wc = params.get('weekCommencing')
+  try {
+    const stored = localStorage.getItem('dutySwapPrefill')
+    if (stored) {
+      const data = JSON.parse(stored)
+      localStorage.removeItem('dutySwapPrefill')
+      return {
+        weekCommencing: data.weekCommencing ? new Date(data.weekCommencing + 'T12:00:00') : null,
+        weekType: data.weekType || null,
+        driverAName: data.driverAName || '',
+        driverADuty: data.driverADuty || '',
+        driverBName: data.driverBName || '',
+        driverBDuty: '',
+      }
+    }
+  } catch {}
   return {
-    weekCommencing: wc ? new Date(wc + 'T12:00:00') : null,
-    weekType: params.get('weekType') || null,
-    driverAName: params.get('driverAName') || '',
-    driverADuty: params.get('driverADuty') || '',
-    driverBName: params.get('driverBName') || '',
-    driverBDuty: params.get('driverBDuty') || '',
+    weekCommencing: null,
+    weekType: null,
+    driverAName: '',
+    driverADuty: '',
+    driverBName: '',
+    driverBDuty: '',
   }
 }
 
