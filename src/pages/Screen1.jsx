@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
@@ -15,12 +15,23 @@ const WEEK_TYPES = [
   { label: 'Mon to Fri', value: 'mon-fri' },
 ]
 
+const EMPTY_FORM = {
+  weekCommencing: null,
+  weekType: null,
+  driverAName: '',
+  driverADuty: '',
+  driverBName: '',
+  driverBDuty: '',
+}
+
 function getInitialForm() {
   try {
     const stored = localStorage.getItem('dutySwapPrefill')
     if (stored) {
       const data = JSON.parse(stored)
       localStorage.removeItem('dutySwapPrefill')
+      // Ignore stale data older than 2 minutes
+      if (data._ts && Date.now() - data._ts > 2 * 60 * 1000) return EMPTY_FORM
       return {
         weekCommencing: data.weekCommencing ? new Date(data.weekCommencing + 'T12:00:00') : null,
         weekType: data.weekType || null,
@@ -31,14 +42,7 @@ function getInitialForm() {
       }
     }
   } catch {}
-  return {
-    weekCommencing: null,
-    weekType: null,
-    driverAName: '',
-    driverADuty: '',
-    driverBName: '',
-    driverBDuty: '',
-  }
+  return EMPTY_FORM
 }
 
 function FieldGroup({ label, children }) {
