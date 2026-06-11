@@ -1,0 +1,17 @@
+name: Supabase Keep-Alive
+
+on:
+  schedule:
+    - cron: '0 18 * * 1,4'   # 매주 월·목 18:00 UTC (브리즈번 새벽 4시)
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase to prevent auto-pause
+        run: |
+          curl -s -o /dev/null -w "Supabase ping: HTTP %{http_code}\n" \
+            "${{ secrets.VITE_SUPABASE_URL }}/rest/v1/shift_swap_requests?select=id&limit=1" \
+            -H "apikey: ${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.VITE_SUPABASE_ANON_KEY }}"
