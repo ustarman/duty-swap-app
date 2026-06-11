@@ -28,6 +28,8 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_ADMIN_PIN: ${{ secrets.VITE_ADMIN_PIN }}
+          VITE_MAILING_PIN: ${{ secrets.VITE_MAILING_PIN }}
 
       - name: Copy index.html to 404.html (SPA routing)
         run: cp dist/index.html dist/404.html
