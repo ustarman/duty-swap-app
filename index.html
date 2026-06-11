@@ -11,9 +11,17 @@
       if (screen.orientation && screen.orientation.lock) {
         screen.orientation.lock('portrait').catch(function() {});
       }
+      // GitHub Pages SPA redirect
+      (function() {
+        var p = window.location.search.slice(1);
+        if (p.indexOf('p=') === 0) {
+          var path = decodeURIComponent(p.slice(2));
+          window.history.replaceState(null, null, '/' + path);
+        }
+      })();
     </script>
-    <script type="module" crossorigin src="/duty-swap-app/assets/index-BUsi4JCF.js"></script>
-    <link rel="stylesheet" crossorigin href="/duty-swap-app/assets/index-BUk3Yy-Y.css">
+    <script type="module" crossorigin src="/duty-swap-app/assets/index-DSMdmdSA.js"></script>
+    <link rel="stylesheet" crossorigin href="/duty-swap-app/assets/index-ckHqU55S.css">
   </head>
   <body>
     <div id="root"></div>
