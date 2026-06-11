@@ -4,10 +4,10 @@ import Header from '../components/Header'
 import SwapTable from '../components/SwapTable'
 import SignaturePad from '../components/SignaturePad'
 import { getSwap, updateSwap, getSupervisors, getAllActiveRecipients, sendCompletionEmail } from '../dataService'
-import { formatDate, formatWeekType } from '../utils/helpers'
+import { formatDate, formatDateTime, formatWeekType } from '../utils/helpers'
 import { AP_RED, CARD, INPUT_BOX, INPUT_LABEL, INPUT_STYLE, FIELD_LABEL, BTN_PRIMARY } from '../theme'
 
-function SigThumb({ label, src }) {
+function SigThumb({ label, src, signedAt }) {
   return (
     <div style={{ flex: 1, minWidth: 0 }}>
       <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--label-color)', marginBottom: 4 }}>{label}</p>
@@ -23,6 +23,9 @@ function SigThumb({ label, src }) {
         >
           <span style={{ color: 'var(--subtext-color)', fontSize: 12 }}>—</span>
         </div>
+      )}
+      {signedAt && (
+        <p style={{ fontSize: 10, color: 'var(--subtext-color)', marginTop: 3 }}>{formatDateTime(signedAt)}</p>
       )}
     </div>
   )
@@ -90,13 +93,12 @@ export default function Screen4() {
         supervisorSignedDate: new Date().toISOString(),
         status: 'Completed',
       })
+      setApproved(true)
       setSwap(updated)
 
       // Send completion email to all active recipients
       const recipients = await getAllActiveRecipients()
       await sendCompletionEmail(updated, recipients)
-
-      setApproved(true)
     } catch {
       setError('Something went wrong. Please try again.')
       setSubmitting(false)
@@ -109,9 +111,22 @@ export default function Screen4() {
 
       <div style={{ flex: 1, padding: '1rem', paddingBottom: '2rem' }}>
 
-        <p style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-color)', textAlign: 'center', marginBottom: '1rem' }}>
-          Supervisor Approval
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem' }}>
+          {window.history.length > 1 ? (
+            <button
+              onClick={() => navigate(-1)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: AP_RED, fontSize: 14, fontWeight: 600, padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}
+            >
+              ‹ Back
+            </button>
+          ) : (
+            <div style={{ width: 48 }} />
+          )}
+          <p style={{ flex: 1, fontWeight: 700, fontSize: 15, color: 'var(--text-color)', textAlign: 'center', margin: 0 }}>
+            Supervisor Approval
+          </p>
+          <div style={{ width: 48 }} />
+        </div>
 
         {/* Details card */}
         <div style={CARD}>
@@ -123,8 +138,8 @@ export default function Screen4() {
 
           {/* Sig thumbnails */}
           <div style={{ display: 'flex', gap: 10, marginTop: '0.75rem' }}>
-            <SigThumb label="Driver A Signature" src={swap.driverASignature} />
-            <SigThumb label="Driver B Signature" src={swap.driverBSignature} />
+            <SigThumb label="Driver A Signature" src={swap.driverASignature} signedAt={swap.driverASignedDate} />
+            <SigThumb label="Driver B Signature" src={swap.driverBSignature} signedAt={swap.driverBSignedDate} />
           </div>
 
           <div style={{ marginTop: '0.75rem', borderTop: '0.5px solid var(--divider-color)', paddingTop: '0.75rem' }}>
@@ -216,7 +231,7 @@ export default function Screen4() {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8 }}>
                   <span style={{ fontSize: 13, color: 'var(--label-color)' }}>Approval Date</span>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-color)' }}>{formatDate(swap.supervisorSignedDate)}</span>
+                  <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-color)' }}>{formatDateTime(swap.supervisorSignedDate)}</span>
                 </div>
               </div>
 
@@ -231,7 +246,7 @@ export default function Screen4() {
               )}
 
               <button onClick={() => navigate('/admin')} style={BTN_PRIMARY}>
-                View more details
+                View Status
               </button>
             </>
           )}

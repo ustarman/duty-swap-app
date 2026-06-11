@@ -2,9 +2,12 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import StatusBadge from '../components/StatusBadge'
-import { getAllSwaps } from '../dataService'
+import { getAllSwaps, getAllSupervisors, addSupervisor, updateSupervisor, deleteSupervisor } from '../dataService'
 import { formatDate, formatWeekType } from '../utils/helpers'
-import { AP_RED } from '../theme'
+import { AP_RED, CARD, INPUT_BOX, INPUT_LABEL, INPUT_STYLE, BTN_PRIMARY } from '../theme'
+
+const CORRECT_PIN = import.meta.env.VITE_ADMIN_PIN ?? '1234'
+const MAILING_PIN = import.meta.env.VITE_MAILING_PIN ?? '0000'
 
 const FILTERS = [
   { label: 'All', value: 'all' },
@@ -13,29 +16,90 @@ const FILTERS = [
   { label: 'Completed', value: 'Completed' },
 ]
 
-const TH = {
-  padding: '10px 12px',
-  textAlign: 'left',
-  fontSize: 12,
-  fontWeight: 700,
-  color: 'var(--label-color)',
-  whiteSpace: 'nowrap',
-  borderBottom: '2px solid var(--divider-color)',
-  background: 'var(--card-bg)',
-  position: 'sticky',
-  top: 0,
+// ── PIN Gate ──────────────────────────────────────────────────────────────────
+function PinGate({ onUnlock, correctPin, sessionKey, title = 'Admin PIN' }) {
+  const [pin, setPin] = useState('')
+  const [error, setError] = useState(false)
+
+  const handleDigit = d => {
+    if (pin.length >= 6) return
+    const next = pin + d
+    setPin(next)
+    setError(false)
+    if (next.length === correctPin.length) {
+      if (next === correctPin) {
+        sessionStorage.setItem(sessionKey, '1')
+        onUnlock()
+      } else {
+        setTimeout(() => { setPin(''); setError(true) }, 300)
+      }
+    }
+  }
+
+  const handleDelete = () => { setPin(p => p.slice(0, -1)); setError(false) }
+
+  const digits = ['1','2','3','4','5','6','7','8','9','','0','⌫']
+
+  const inner = (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+        <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-color)', marginBottom: 8 }}>{title}</p>
+        <p style={{ fontSize: 13, color: 'var(--subtext-color)', marginBottom: 28 }}>Enter your PIN to continue</p>
+
+        {/* Dots */}
+        <div style={{ display: 'flex', gap: 14, marginBottom: 32 }}>
+          {Array.from({ length: CORRECT_PIN.length }).map((_, i) => (
+            <div key={i} style={{
+              width: 14, height: 14, borderRadius: '50%',
+              background: i < pin.length ? (error ? '#ef4444' : AP_RED) : 'var(--card-border)',
+              transition: 'background 0.15s',
+            }} />
+          ))}
+        </div>
+
+        {error && (
+          <p style={{ fontSize: 13, color: '#ef4444', fontWeight: 600, marginBottom: 20, marginTop: -16 }}>
+            Incorrect PIN
+          </p>
+        )}
+
+        {/* Keypad */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 72px)', gap: 12 }}>
+          {digits.map((d, i) => (
+            d === '' ? <div key={i} /> :
+            d === '⌫' ? (
+              <button key={i} onClick={handleDelete} style={{
+                height: 72, borderRadius: 36, background: 'var(--input-bg)',
+                border: '1px solid var(--card-border)', fontSize: 20,
+                color: 'var(--text-color)', cursor: 'pointer', fontWeight: 500,
+              }}>{d}</button>
+            ) : (
+              <button key={i} onClick={() => handleDigit(d)} style={{
+                height: 72, borderRadius: 36, background: 'var(--card-bg)',
+                border: '1px solid var(--card-border)', fontSize: 22,
+                color: 'var(--text-color)', cursor: 'pointer', fontWeight: 500,
+              }}>{d}</button>
+            )
+          ))}
+        </div>
+      </div>
+  )
+
+  if (correctPin === CORRECT_PIN) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100svh' }}>
+        <Header showAdmin />
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          {inner}
+        </div>
+      </div>
+    )
+  }
+
+  return inner
 }
 
-const TD = {
-  padding: '10px 12px',
-  fontSize: 13,
-  color: 'var(--text-color)',
-  whiteSpace: 'nowrap',
-  borderBottom: '1px solid var(--divider-color)',
-  verticalAlign: 'middle',
-}
-
-export default function Admin() {
+// ── Swap Requests Tab ─────────────────────────────────────────────────────────
+function SwapRequestsTab() {
   const navigate = useNavigate()
   const [filter, setFilter] = useState('all')
   const [search, setSearch] = useState('')
@@ -43,10 +107,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    getAllSwaps().then(data => {
-      setSwaps(data)
-      setLoading(false)
-    })
+    getAllSwaps().then(data => { setSwaps(data); setLoading(false) })
   }, [])
 
   const filtered = swaps
@@ -61,129 +122,333 @@ export default function Admin() {
       )
     })
 
+  return (
+    <>
+      {/* Search */}
+      <div style={{ position: 'relative', marginBottom: '0.75rem' }}>
+        <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 15, color: 'var(--subtext-color)' }}>🔍</span>
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search by name..."
+          style={{
+            width: '100%', padding: '10px 12px 10px 36px',
+            border: '1.5px solid var(--card-border)', borderRadius: 8,
+            background: 'var(--card-bg)', color: 'var(--text-color)',
+            fontSize: 14, outline: 'none', boxSizing: 'border-box',
+          }}
+        />
+        {search && (
+          <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--subtext-color)', fontSize: 16 }}>✕</button>
+        )}
+      </div>
+
+      {/* Filter tabs */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: '1rem', flexWrap: 'wrap' }}>
+        {FILTERS.map(f => {
+          const isActive = filter === f.value
+          return (
+            <button key={f.value} onClick={() => setFilter(f.value)} style={{
+              flex: '1 1 auto', padding: '7px 10px',
+              border: `1.5px solid ${isActive ? AP_RED : 'var(--tab-border)'}`,
+              borderRadius: 8,
+              background: isActive ? AP_RED : 'var(--tab-bg)',
+              color: isActive ? 'white' : 'var(--tab-color)',
+              fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
+            }}>
+              {f.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Cards */}
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--subtext-color)', fontSize: 14 }}>Loading...</div>
+      ) : filtered.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--subtext-color)', fontSize: 14 }}>No swap requests found</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {filtered.map(swap => (
+            <button
+              key={swap.id}
+              onClick={() => navigate(`/screen4?swapId=${swap.id}`)}
+              style={{
+                width: '100%', textAlign: 'left',
+                background: 'var(--card-bg)', border: '0.5px solid var(--card-border)',
+                borderRadius: 12, padding: '1rem 1.25rem', cursor: 'pointer',
+              }}
+            >
+              <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-color)', marginBottom: 4 }}>
+                {swap.title}
+              </p>
+              <p style={{ fontSize: 14, color: 'var(--text-color)', marginBottom: 4 }}>
+                <span style={{ fontWeight: 600 }}>{swap.driverAName}</span>
+                <span style={{ color: 'var(--subtext-color)' }}> (Duty {swap.driverADuty})</span>
+                {' ↔ '}
+                <span style={{ fontWeight: 600 }}>{swap.driverBName}</span>
+                <span style={{ color: 'var(--subtext-color)' }}> (Duty {swap.driverBDuty})</span>
+              </p>
+              <p style={{ fontSize: 13, color: 'var(--subtext-color)', marginBottom: 10 }}>
+                Week of {formatDate(swap.weekCommencing)}
+                {' • '}
+                <span style={{ color: '#d97706', fontWeight: 600 }}>{formatWeekType(swap)}</span>
+              </p>
+              <StatusBadge status={swap.status} />
+            </button>
+          ))}
+        </div>
+      )}
+    </>
+  )
+}
+
+// ── Mailing List Tab ──────────────────────────────────────────────────────────
+function MailingListTab() {
+  const [mailingUnlocked, setMailingUnlocked] = useState(
+    sessionStorage.getItem('mailing_unlocked') === '1'
+  )
+
+  if (!mailingUnlocked) {
+    return (
+      <PinGate
+        title="Mailing List PIN"
+        correctPin={MAILING_PIN}
+        sessionKey="mailing_unlocked"
+        onUnlock={() => setMailingUnlocked(true)}
+      />
+    )
+  }
+
+  return <MailingListContent />
+}
+
+function MailingListContent() {
+  const [supervisors, setSupervisors] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(null)
+  const [showAdd, setShowAdd] = useState(false)
+  const [newForm, setNewForm] = useState({ name: '', email: '', role: '', authorityToSign: false })
+  const [adding, setAdding] = useState(false)
+  const [addError, setAddError] = useState('')
+
+  useEffect(() => {
+    getAllSupervisors().then(data => { setSupervisors(data); setLoading(false) })
+  }, [])
+
+  const toggle = async (id, field, current) => {
+    setSaving(id + field)
+    try {
+      await updateSupervisor(id, { [field]: !current })
+      setSupervisors(prev => prev.map(s => s.id === id ? { ...s, [field]: !current } : s))
+    } finally {
+      setSaving(null)
+    }
+  }
+
+  const handleDelete = async id => {
+    if (!confirm('Remove this person from the mailing list?')) return
+    await deleteSupervisor(id)
+    setSupervisors(prev => prev.filter(s => s.id !== id))
+  }
+
+  const handleAdd = async () => {
+    setAddError('')
+    if (!newForm.name.trim()) { setAddError('Name is required'); return }
+    if (!newForm.email.trim()) { setAddError('Email is required'); return }
+    setAdding(true)
+    try {
+      await addSupervisor(newForm)
+      const updated = await getAllSupervisors()
+      setSupervisors(updated)
+      setNewForm({ name: '', email: '', role: '', authorityToSign: false })
+      setShowAdd(false)
+    } catch {
+      setAddError('Failed to add. Please try again.')
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  if (loading) return (
+    <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--subtext-color)', fontSize: 14 }}>Loading...</div>
+  )
+
+  return (
+    <>
+      <p style={{ fontSize: 12, color: 'var(--subtext-color)', marginBottom: '0.75rem', lineHeight: 1.5 }}>
+        <strong>Active</strong> — receives all emails.{'  '}<strong>Authority to Sign</strong> — appears as selectable supervisor on approval screen.
+      </p>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: '1rem' }}>
+        {supervisors.map(s => (
+          <div key={s.id} style={{ ...CARD, marginBottom: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-color)' }}>{s.name}</p>
+                <p style={{ fontSize: 12, color: 'var(--subtext-color)' }}>{s.email}</p>
+                {s.role && <p style={{ fontSize: 11, color: 'var(--subtext-color)', marginTop: 2 }}>{s.role}</p>}
+              </div>
+              <button
+                onClick={() => handleDelete(s.id)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--subtext-color)', fontSize: 18, padding: '0 0 0 8px', flexShrink: 0 }}
+              >
+                ✕
+              </button>
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <ToggleChip
+                label="Active"
+                active={s.active}
+                disabled={saving === s.id + 'active'}
+                onToggle={() => toggle(s.id, 'active', s.active)}
+              />
+              <ToggleChip
+                label="Authority to Sign"
+                active={s.authorityToSign}
+                disabled={saving === s.id + 'authorityToSign'}
+                onToggle={() => toggle(s.id, 'authorityToSign', s.authorityToSign)}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {showAdd ? (
+        <div style={CARD}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-color)', marginBottom: 12 }}>Add Person</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={INPUT_BOX}>
+              <span style={INPUT_LABEL}>FULL NAME</span>
+              <input
+                type="text"
+                value={newForm.name}
+                onChange={e => setNewForm(p => ({ ...p, name: e.target.value }))}
+                placeholder="e.g. Jane Smith"
+                style={INPUT_STYLE}
+              />
+            </div>
+            <div style={INPUT_BOX}>
+              <span style={INPUT_LABEL}>EMAIL</span>
+              <input
+                type="email"
+                value={newForm.email}
+                onChange={e => setNewForm(p => ({ ...p, email: e.target.value }))}
+                placeholder="e.g. jane@example.com"
+                style={INPUT_STYLE}
+              />
+            </div>
+            <div style={INPUT_BOX}>
+              <span style={INPUT_LABEL}>ROLE (optional)</span>
+              <input
+                type="text"
+                value={newForm.role}
+                onChange={e => setNewForm(p => ({ ...p, role: e.target.value }))}
+                placeholder="e.g. PTC3"
+                style={INPUT_STYLE}
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <ToggleChip
+                label="Authority to Sign"
+                active={newForm.authorityToSign}
+                onToggle={() => setNewForm(p => ({ ...p, authorityToSign: !p.authorityToSign }))}
+              />
+              <span style={{ fontSize: 12, color: 'var(--subtext-color)' }}>Selectable as approving supervisor</span>
+            </div>
+          </div>
+          {addError && <p style={{ color: AP_RED, fontSize: 13, fontWeight: 600, marginTop: 10 }}>{addError}</p>}
+          <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+            <button
+              onClick={() => { setShowAdd(false); setAddError('') }}
+              style={{ flex: 1, padding: '12px', background: 'var(--input-bg)', border: '1px solid var(--card-border)', borderRadius: 8, fontSize: 14, fontWeight: 600, color: 'var(--text-color)', cursor: 'pointer' }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleAdd}
+              disabled={adding}
+              style={{ ...BTN_PRIMARY, flex: 2, padding: '12px', opacity: adding ? 0.6 : 1 }}
+            >
+              {adding ? 'Adding...' : 'Add'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setShowAdd(true)}
+          style={{ ...BTN_PRIMARY, background: 'transparent', color: AP_RED, border: `1.5px solid ${AP_RED}` }}
+        >
+          + Add Person
+        </button>
+      )}
+    </>
+  )
+}
+
+function ToggleChip({ label, active, onToggle, disabled }) {
+  return (
+    <button
+      onClick={onToggle}
+      disabled={disabled}
+      style={{
+        padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+        border: `1.5px solid ${active ? AP_RED : 'var(--tab-border)'}`,
+        background: active ? AP_RED : 'var(--tab-bg)',
+        color: active ? 'white' : 'var(--tab-color)',
+        cursor: 'pointer', opacity: disabled ? 0.5 : 1, transition: 'all 0.15s',
+      }}
+    >
+      {label}
+    </button>
+  )
+}
+
+// ── Main Admin ────────────────────────────────────────────────────────────────
+export default function Admin() {
+  const [unlocked, setUnlocked] = useState(
+    sessionStorage.getItem('admin_unlocked') === '1'
+  )
+  const [tab, setTab] = useState('swaps')
+
+  const navigate = useNavigate()
+
+  if (!unlocked) return <PinGate correctPin={CORRECT_PIN} sessionKey="admin_unlocked" onUnlock={() => setUnlocked(true)} />
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100svh' }}>
       <Header showAdmin />
 
       <div style={{ flex: 1, padding: '1rem', paddingBottom: '2rem' }}>
-        <p style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-color)', marginBottom: '0.75rem' }}>
-          Swap Requests
-        </p>
 
-        {/* Search */}
-        <div style={{ position: 'relative', marginBottom: '0.75rem' }}>
-          <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 15, color: 'var(--subtext-color)' }}>🔍</span>
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search by name..."
-            style={{
-              width: '100%',
-              padding: '10px 12px 10px 36px',
-              border: '1.5px solid var(--card-border)',
-              borderRadius: 8,
-              background: 'var(--card-bg)',
-              color: 'var(--text-color)',
-              fontSize: 14,
-              outline: 'none',
-              boxSizing: 'border-box',
-            }}
-          />
-          {search && (
-            <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--subtext-color)', fontSize: 16 }}>✕</button>
-          )}
+        <button
+          onClick={() => tab === 'mailing' ? setTab('swaps') : navigate(-1)}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: AP_RED, fontSize: 14, fontWeight: 600, padding: 0, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: 4 }}
+        >
+          ‹ Back
+        </button>
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', gap: 6, marginBottom: '1rem' }}>
+          {[{ value: 'swaps', label: 'Swap Requests' }, { value: 'mailing', label: 'Mailing List' }].map(t => (
+            <button
+              key={t.value}
+              onClick={() => setTab(t.value)}
+              style={{
+                flex: 1, padding: '9px', borderRadius: 8, fontSize: 13, fontWeight: 700,
+                border: `1.5px solid ${tab === t.value ? AP_RED : 'var(--tab-border)'}`,
+                background: tab === t.value ? AP_RED : 'var(--tab-bg)',
+                color: tab === t.value ? 'white' : 'var(--tab-color)',
+                cursor: 'pointer',
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
 
-        {/* Filter tabs */}
-        <div style={{ display: 'flex', gap: 6, marginBottom: '1rem', flexWrap: 'wrap' }}>
-          {FILTERS.map(f => {
-            const isActive = filter === f.value
-            return (
-              <button
-                key={f.value}
-                onClick={() => setFilter(f.value)}
-                style={{
-                  flex: '1 1 auto',
-                  padding: '7px 10px',
-                  border: `1.5px solid ${isActive ? AP_RED : 'var(--tab-border)'}`,
-                  borderRadius: 8,
-                  background: isActive ? AP_RED : 'var(--tab-bg)',
-                  color: isActive ? 'white' : 'var(--tab-color)',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {f.label}
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Table */}
-        {loading ? (
-          <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--subtext-color)', fontSize: 14 }}>Loading...</div>
-        ) : filtered.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--subtext-color)', fontSize: 14 }}>No swap requests found</div>
-        ) : (
-          <div style={{ overflowX: 'auto', border: '0.5px solid var(--card-border)', borderRadius: 10, background: 'var(--card-bg)' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 700 }}>
-              <thead>
-                <tr>
-                  <th style={TH}>Reference</th>
-                  <th style={TH}>Driver A</th>
-                  <th style={TH}>Duty A</th>
-                  <th style={TH}>Driver B</th>
-                  <th style={TH}>Duty B</th>
-                  <th style={TH}>Week</th>
-                  <th style={TH}>Week Type</th>
-                  <th style={TH}>Status</th>
-                  <th style={TH}>Supervisor</th>
-                  <th style={TH}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((swap, i) => (
-                  <tr
-                    key={swap.id}
-                    style={{ background: i % 2 === 0 ? 'var(--card-bg)' : 'var(--input-bg)' }}
-                  >
-                    <td style={{ ...TD, fontWeight: 700, fontSize: 12, color: AP_RED }}>{swap.title}</td>
-                    <td style={TD}>{swap.driverAName}</td>
-                    <td style={{ ...TD, color: 'var(--subtext-color)' }}>{swap.driverADuty}</td>
-                    <td style={TD}>{swap.driverBName}</td>
-                    <td style={{ ...TD, color: 'var(--subtext-color)' }}>{swap.driverBDuty}</td>
-                    <td style={TD}>{formatDate(swap.weekCommencing)}</td>
-                    <td style={{ ...TD, color: 'var(--subtext-color)' }}>{formatWeekType(swap)}</td>
-                    <td style={TD}><StatusBadge status={swap.status} /></td>
-                    <td style={{ ...TD, color: 'var(--subtext-color)' }}>{swap.supervisorName || '—'}</td>
-                    <td style={TD}>
-                      <button
-                        onClick={() => navigate(`/screen4?swapId=${swap.id}`)}
-                        style={{
-                          padding: '4px 10px',
-                          fontSize: 12,
-                          fontWeight: 600,
-                          border: `1px solid ${AP_RED}`,
-                          borderRadius: 6,
-                          background: 'transparent',
-                          color: AP_RED,
-                          cursor: 'pointer',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        {tab === 'swaps' ? <SwapRequestsTab /> : <MailingListTab />}
       </div>
     </div>
   )
