@@ -18,6 +18,7 @@ export default function Screen3() {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
+  const [emailFailed, setEmailFailed] = useState(false)
 
   useEffect(() => {
     if (!swapId) { setLoading(false); return }
@@ -73,7 +74,8 @@ export default function Screen3() {
 
       // Send approval email to all supervisors
       const supervisors = await getSupervisors()
-      await sendApprovalEmail(updated, supervisors)
+      const result = await sendApprovalEmail(updated, supervisors)
+      if (!result?.ok) setEmailFailed(true)
 
       setDone(true)
     } catch {
@@ -115,8 +117,19 @@ export default function Screen3() {
           {showDone ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1.5rem 0', gap: '1.25rem' }}>
               <p style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-color)', textAlign: 'center' }}>
-                ✅ Signed! Supervisors have been notified.
+                ✅ Signed!{!emailFailed && ' Supervisors have been notified.'}
               </p>
+              {emailFailed && (
+                <p style={{
+                  fontSize: 13, fontWeight: 600, color: '#92600a',
+                  background: '#FFF8E5', border: '1px solid #F2DC9F',
+                  borderRadius: 8, padding: '10px 14px',
+                  textAlign: 'center', lineHeight: 1.5,
+                }}>
+                  ⚠️ However, the notification email could not be sent.<br />
+                  Please contact a supervisor directly.
+                </p>
+              )}
               <button onClick={() => navigate('/screen1')} style={{ ...BTN_PRIMARY, maxWidth: 240 }}>
                 OK
               </button>

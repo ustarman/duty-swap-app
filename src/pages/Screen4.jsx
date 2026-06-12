@@ -44,6 +44,7 @@ export default function Screen4() {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [approved, setApproved] = useState(false)
+  const [emailFailed, setEmailFailed] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -98,7 +99,8 @@ export default function Screen4() {
 
       // Send completion email to all active recipients
       const recipients = await getAllActiveRecipients()
-      await sendCompletionEmail(updated, recipients)
+      const result = await sendCompletionEmail(updated, recipients)
+      if (!result?.ok) setEmailFailed(true)
     } catch {
       setError('Something went wrong. Please try again.')
       setSubmitting(false)
@@ -215,6 +217,17 @@ export default function Screen4() {
               <p style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-color)', textAlign: 'center' }}>
                 ✅ Swap Request Approved!
               </p>
+              {emailFailed && (
+                <p style={{
+                  fontSize: 13, fontWeight: 600, color: '#92600a',
+                  background: '#FFF8E5', border: '1px solid #F2DC9F',
+                  borderRadius: 8, padding: '10px 14px',
+                  textAlign: 'center', lineHeight: 1.5,
+                }}>
+                  ⚠️ The confirmation email could not be sent.<br />
+                  Please notify the office manually.
+                </p>
+              )}
               <p style={{ fontSize: 14, color: 'var(--subtext-color)', textAlign: 'center', lineHeight: 1.6 }}>
                 The approval has been completed.{'\n'}You may now close this app.
               </p>

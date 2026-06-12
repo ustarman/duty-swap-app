@@ -1,7 +1,12 @@
 import { supabase } from './lib/supabase'
 
 function generateId() {
-  return Date.now().toString()
+  // UUID: collision-proof + unguessable links
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID()
+  }
+  // Fallback for very old browsers
+  return Date.now().toString() + '-' + Math.random().toString(36).slice(2, 10)
 }
 
 function generateRef() {
@@ -200,17 +205,27 @@ export async function getAllActiveRecipients() {
 }
 
 export async function sendApprovalEmail(swap, supervisors) {
-  const { data, error } = await supabase.functions.invoke('send-approval-email-', {
-    body: { type: 'approval', swap, supervisors },
-  })
-  if (error) console.error('Approval email error:', error)
-  return data
+  try {
+    const { data, error } = await supabase.functions.invoke('send-approval-email-', {
+      body: { type: 'approval', swap, supervisors },
+    })
+    if (error) { console.error('Approval email error:', error); return { ok: false } }
+    return { ok: true, data }
+  } catch (err) {
+    console.error('Approval email error:', err)
+    return { ok: false }
+  }
 }
 
 export async function sendCompletionEmail(swap, recipients) {
-  const { data, error } = await supabase.functions.invoke('send-approval-email-', {
-    body: { type: 'completion', swap, supervisors: recipients },
-  })
-  if (error) console.error('Completion email error:', error)
-  return data
+  try {
+    const { data, error } = await supabase.functions.invoke('send-approval-email-', {
+      body: { type: 'completion', swap, supervisors: recipients },
+    })
+    if (error) { console.error('Completion email error:', error); return { ok: false } }
+    return { ok: true, data }
+  } catch (err) {
+    console.error('Completion email error:', err)
+    return { ok: false }
+  }
 }
