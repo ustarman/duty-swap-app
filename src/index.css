@@ -84,9 +84,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .react-datepicker__portal .react-datepicker {
   font-size: 16px !important;
 }
-.react-datepicker__portal .react-datepicker__day {
+.react-datepicker__portal .react-datepicker__day,
+.react-datepicker__portal .react-datepicker__day-name {
   width: 2.5rem !important;
   line-height: 2.5rem !important;
+  margin: 0.05rem !important;
 }
 .react-datepicker__day-name,
 .react-datepicker__day {
