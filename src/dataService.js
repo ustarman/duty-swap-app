@@ -1,4 +1,5 @@
 import { supabase } from './lib/supabase'
+import { normalizeDuty } from './utils/helpers'
 
 function generateId() {
   // UUID: collision-proof + unguessable links
@@ -53,9 +54,9 @@ export async function findDuplicateSwap(driverAName, driverADuty, driverBName, d
     .from('shift_swap_requests')
     .select('id, title, status')
     .ilike('driver_a_name', driverAName.trim())
-    .ilike('driver_a_duty', driverADuty.trim())
+    .ilike('driver_a_duty', normalizeDuty(driverADuty))
     .ilike('driver_b_name', driverBName.trim())
-    .ilike('driver_b_duty', driverBDuty.trim())
+    .ilike('driver_b_duty', normalizeDuty(driverBDuty))
     .eq('week_commencing', weekCommencing)
     .neq('status', 'Completed')
     .limit(1)
