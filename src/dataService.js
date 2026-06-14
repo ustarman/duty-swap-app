@@ -46,13 +46,18 @@ function mapToApp(row) {
   }
 }
 
-export async function findDuplicateSwap(driverAName, driverADuty, weekCommencing) {
+export async function findDuplicateSwap(driverAName, driverADuty, driverBName, driverBDuty, weekCommencing) {
+  // Duplicate = same A name+duty AND same B name+duty AND same week, among active swaps.
+  // Case- and whitespace-insensitive (ilike + trim).
   const { data, error } = await supabase
     .from('shift_swap_requests')
     .select('id, title, status')
     .ilike('driver_a_name', driverAName.trim())
     .ilike('driver_a_duty', driverADuty.trim())
+    .ilike('driver_b_name', driverBName.trim())
+    .ilike('driver_b_duty', driverBDuty.trim())
     .eq('week_commencing', weekCommencing)
+    .neq('status', 'Completed')
     .limit(1)
     .maybeSingle()
 
@@ -83,7 +88,15 @@ export async function createSwap(data) {
     .select()
     .single()
 
-  if (error) throw error
+  if (error) {
+    // 23505 = unique index violation → an identical active swap already exists
+    if (error.code === '23505') {
+      const dupErr = new Error('DUPLICATE_SWAP')
+      dupErr.code = 'DUPLICATE_SWAP'
+      throw dupErr
+    }
+    throw error
+  }
   return mapToApp(result)
 }
 

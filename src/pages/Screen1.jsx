@@ -7,6 +7,7 @@ import SectionDivider from '../components/SectionDivider'
 import SignaturePad from '../components/SignaturePad'
 import InputBox from '../components/InputBox'
 import { createSwap, findDuplicateSwap } from '../dataService'
+import { normalizeDuty } from '../utils/helpers'
 import { AP_RED, CARD, INPUT_STYLE, FIELD_LABEL, BTN_PRIMARY } from '../theme'
 
 const WEEK_TYPES = [
@@ -70,6 +71,7 @@ function FieldGroup({ label, children }) {
 export default function Screen1() {
   const navigate = useNavigate()
   const sigRef = useRef(null)
+  const submitLock = useRef(false)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState(getInitialForm)
@@ -90,14 +92,20 @@ export default function Screen1() {
     if (!form.driverBDuty.trim()) { setError('Driver B Duty Number is required'); return }
     if (sigRef.current?.isEmpty()) { setError('Driver A signature is required'); return }
 
+    // Synchronous guard against double-tap (setSubmitting only applies on next render)
+    if (submitLock.current) return
+    submitLock.current = true
+
     setSubmitting(true)
     try {
       const wc = form.weekCommencing
       const weekStr = `${wc.getFullYear()}-${String(wc.getMonth() + 1).padStart(2, '0')}-${String(wc.getDate()).padStart(2, '0')}`
-      const duplicate = await findDuplicateSwap(form.driverAName, form.driverADuty, weekStr)
+      const dutyA = normalizeDuty(form.driverADuty)
+      const dutyB = normalizeDuty(form.driverBDuty)
+
+      const duplicate = await findDuplicateSwap(form.driverAName, dutyA, form.driverBName, dutyB, weekStr)
       if (duplicate) {
-        setError(`A swap request for duty ${duplicate.driverADuty} on this week already exists (Ref: ${duplicate.title}, Status: ${duplicate.status}). Please check with your supervisor or admin.`)
-        setSubmitting(false)
+        setError(`An identical swap request already exists for this week (Ref: ${duplicate.title}, Status: ${duplicate.status}). Please check with your supervisor or admin.`)
         return
       }
 
@@ -105,15 +113,21 @@ export default function Screen1() {
         weekCommencing: weekStr,
         weekType: form.weekType,
         driverAName: form.driverAName,
-        driverADuty: form.driverADuty,
+        driverADuty: dutyA,
         driverBName: form.driverBName,
-        driverBDuty: form.driverBDuty,
+        driverBDuty: dutyB,
         driverASignature: sigRef.current.toDataURL(),
         driverASignedDate: new Date().toISOString(),
       })
       navigate(`/screen2?swapId=${record.id}`)
     } catch (err) {
-      setError('Failed to save. Please try again.')
+      if (err?.code === 'DUPLICATE_SWAP') {
+        setError('An identical swap request already exists for this week. Please check with your supervisor or admin.')
+      } else {
+        setError('Failed to save. Please try again.')
+      }
+    } finally {
+      submitLock.current = false
       setSubmitting(false)
     }
   }

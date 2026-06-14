@@ -1,3 +1,11 @@
+// Normalize a duty number: trim, uppercase, and add "BT" prefix to bare numbers.
+// "100" -> "BT100", "bt100" -> "BT100", "rdo" -> "RDO", "100A" -> "100A"
+export function normalizeDuty(value) {
+  const v = (value || '').trim().toUpperCase()
+  if (/^\d+$/.test(v)) return 'BT' + v
+  return v
+}
+
 export function formatWeekType(swap) {
   if (swap.weekType === 'sunday') return 'Sunday Only'
   if (swap.weekType === 'sun-fri') return 'Sunday to Friday'
