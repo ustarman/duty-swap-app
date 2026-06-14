@@ -92,7 +92,8 @@ export default function Screen1() {
 
     setSubmitting(true)
     try {
-      const weekStr = form.weekCommencing.toISOString().slice(0, 10)
+      const wc = form.weekCommencing
+      const weekStr = `${wc.getFullYear()}-${String(wc.getMonth() + 1).padStart(2, '0')}-${String(wc.getDate()).padStart(2, '0')}`
       const duplicate = await findDuplicateSwap(form.driverAName, form.driverADuty, weekStr)
       if (duplicate) {
         setError(`A swap request for duty ${duplicate.driverADuty} on this week already exists (Ref: ${duplicate.title}, Status: ${duplicate.status}). Please check with your supervisor or admin.`)
