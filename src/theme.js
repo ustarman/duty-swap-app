@@ -3,7 +3,7 @@ export const AP_RED = '#E11B22'
 export const CARD = {
   background: 'var(--card-bg)',
   border: '0.5px solid var(--card-border)',
-  borderRadius: 12,
+  borderRadius: 16,
   padding: '1rem 1.25rem',
   marginBottom: '1rem',
 }
@@ -49,8 +49,11 @@ export const BTN_PRIMARY = {
   background: AP_RED,
   color: 'white',
   border: 'none',
-  borderRadius: 8,
+  borderRadius: 10,
   fontSize: 15,
   fontWeight: 600,
   cursor: 'pointer',
 }
+
+// AP brand red gradient for headers
+export const AP_RED_GRADIENT = 'linear-gradient(150deg,#E11B22 0%,#E11B22 55%,#E4451E 100%)'
