@@ -29,8 +29,8 @@ export default function Header({ showAdmin = false }) {
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          <path d="M7 16V4m0 0L3 8m4-4l4 4" />
-          <path d="M17 8v12m0 0l4-4m-4 4l-4-4" />
+          <path d="M5 8H17m0 0l-4-4m4 4l-4 4" />
+          <path d="M19 16H7m0 0l4-4m-4 4l4 4" />
         </svg>
       </div>
       <div style={{ flex: 1 }}>
@@ -54,20 +54,6 @@ export default function Header({ showAdmin = false }) {
           Admin
         </span>
       )}
-
-      <div style={{
-        width: 38, height: 38, borderRadius: '50%',
-        background: 'white', flexShrink: 0, overflow: 'hidden',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        <img
-          src={`${import.meta.env.BASE_URL}icon.jpg`}
-          alt="Australia Post"
-          width={38}
-          height={38}
-          style={{ objectFit: 'cover' }}
-        />
-      </div>
 
       <Swoosh height={42} />
     </header>
