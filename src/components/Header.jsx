@@ -29,8 +29,8 @@ export default function Header({ showAdmin = false }) {
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          <path d="M5 8H17m0 0l-4-4m4 4l-4 4" />
-          <path d="M19 16H7m0 0l4-4m-4 4l4 4" />
+          <path d="M8 7H20m0 0l-4-4m4 4l-4 4" />
+          <path d="M16 17H4m0 0l4 4m-4-4l4-4" />
         </svg>
       </div>
       <div style={{ flex: 1 }}>
