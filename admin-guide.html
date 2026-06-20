@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Duty Swap — Admin Guide</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #f0f0f0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      padding: 32px 16px;
+      color: #1a1a1a;
+    }
+
+    .page {
+      max-width: 720px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── Top card: QR + title ── */
+    .card-top {
+      background: white;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+      display: flex;
+    }
+
+    .card-top .left {
+      background: #E11B22;
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      min-width: 220px;
+    }
+
+    .card-top .left .badge {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      margin-bottom: 14px;
+    }
+
+    .card-top .left h1 {
+      color: white;
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 6px;
+    }
+
+    .card-top .left p {
+      color: rgba(255,255,255,0.8);
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+
+    .card-top .right {
+      flex: 1;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+    }
+
+    #qrcode canvas, #qrcode img {
+      border-radius: 8px;
+      display: block;
+    }
+
+    .qr-label {
+      text-align: center;
+    }
+
+    .qr-label .scan {
+      font-size: 13px;
+      font-weight: 800;
+      color: #E11B22;
+      letter-spacing: 0.5px;
+      margin-bottom: 3px;
+    }
+
+    .qr-label .url {
+      font-size: 11px;
+      color: #888;
+    }
+
+    /* ── Guide cards ── */
+    .guide-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .guide-card {
+      background: white;
+      border-radius: 16px;
+      padding: 22px 20px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+
+    .guide-card .card-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #E11B22;
+      color: white;
+      font-size: 13px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+
+    .guide-card h2 {
+      font-size: 14px;
+      font-weight: 800;
+      color: #1a1a1a;
+      margin-bottom: 10px;
+    }
+
+    .guide-card ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .guide-card ul li {
+      font-size: 12px;
+      color: #444;
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+      line-height: 1.5;
+    }
+
+    .guide-card ul li::before {
+      content: '›';
+      color: #E11B22;
+      font-size: 15px;
+      line-height: 1.3;
+      flex-shrink: 0;
+    }
+
+    .guide-card .note {
+      margin-top: 10px;
+      background: #fff5f5;
+      border-left: 3px solid #E11B22;
+      padding: 8px 10px;
+      border-radius: 0 6px 6px 0;
+      font-size: 11px;
+      color: #c00;
+      line-height: 1.5;
+    }
+
+    /* ── Status table ── */
+    .status-card {
+      background: white;
+      border-radius: 16px;
+      padding: 22px 20px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+
+    .status-card h2 {
+      font-size: 14px;
+      font-weight: 800;
+      color: #1a1a1a;
+      margin-bottom: 14px;
+    }
+
+    .status-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .status-table th {
+      font-size: 11px;
+      font-weight: 700;
+      color: #888;
+      text-align: left;
+      padding: 0 0 8px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .status-table td {
+      padding: 9px 0;
+      font-size: 12px;
+      color: #333;
+      border-bottom: 1px solid #f0f0f0;
+      vertical-align: middle;
+    }
+
+    .status-table td:first-child {
+      padding-right: 16px;
+    }
+
+    .badge-status {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .badge-pending  { background: #fff3cd; color: #856404; }
+    .badge-waiting  { background: #cce5ff; color: #004085; }
+    .badge-complete { background: #d4edda; color: #155724; }
+
+    /* ── Footer ── */
+    .footer {
+      background: white;
+      border-radius: 12px;
+      padding: 14px 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer span {
+      font-size: 11px;
+      color: #aaa;
+    }
+
+    @media print {
+      body { background: white; padding: 0; }
+      .page { max-width: 100%; }
+      .card-top, .guide-card, .status-card, .footer {
+        box-shadow: none;
+        border: 1px solid #eee;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .card-top { flex-direction: column; }
+      .card-top .left { min-width: unset; }
+      .guide-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- QR + Title -->
+    <div class="card-top">
+      <div class="left">
+        <div class="badge">ADMIN ONLY</div>
+        <h1>Duty Swap<br>Admin</h1>
+        <p>Brisbane Transport</p>
+      </div>
+      <div class="right">
+        <div id="qrcode"></div>
+        <div class="qr-label">
+          <div class="scan">SCAN TO OPEN ADMIN</div>
+          <div class="url">ustarman.github.io/duty-swap-app/admin</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Guide cards -->
+    <div class="guide-grid">
+
+      <div class="guide-card">
+        <div class="card-num">1</div>
+        <h2>Access Admin Console</h2>
+        <ul>
+          <li>Scan QR code above or open the Admin app icon on your home screen</li>
+          <li>Enter your <strong>Admin PIN</strong> on the keypad</li>
+          <li>PIN stays active for the session — no re-entry needed until you close the app</li>
+        </ul>
+        <div class="note">Keep your PIN confidential. Do not share with drivers.</div>
+      </div>
+
+      <div class="guide-card">
+        <div class="card-num">2</div>
+        <h2>Swap Requests Tab</h2>
+        <ul>
+          <li>View all duty swap forms submitted by drivers</li>
+          <li>Filter by status: All · Awaiting Driver B · Awaiting Supervisor · Completed</li>
+          <li>Search by driver name</li>
+          <li>Tap any card to open the full swap form (Screen 4)</li>
+        </ul>
+      </div>
+
+      <div class="guide-card">
+        <div class="card-num">3</div>
+        <h2>Mailing List Tab</h2>
+        <ul>
+          <li>Enter the separate <strong>Mailing List PIN</strong> to unlock</li>
+          <li>Manage who receives swap notification emails</li>
+          <li>Toggle <strong>Active</strong> to include/exclude from emails</li>
+          <li>Toggle <strong>Authority to Sign</strong> to appear as selectable supervisor on approval screen</li>
+          <li>Add or remove supervisors at any time</li>
+        </ul>
+        <div class="note">Authority to Sign must be enabled for supervisor to appear in the approval dropdown.</div>
+      </div>
+
+      <div class="status-card">
+        <h2>Swap Status Reference</h2>
+        <table class="status-table">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>Meaning</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge-status badge-pending">Awaiting Driver B</span></td>
+              <td>Driver A submitted — waiting for Driver B to sign</td>
+            </tr>
+            <tr>
+              <td><span class="badge-status badge-waiting">Awaiting Supervisor</span></td>
+              <td>Both drivers signed — waiting for supervisor approval</td>
+            </tr>
+            <tr>
+              <td><span class="badge-status badge-complete">Completed</span></td>
+              <td>Supervisor signed — swap is fully approved</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <span>Australia Post &nbsp;•&nbsp; Brisbane Transport</span>
+      <span>Duty Swap Admin Guide &nbsp;•&nbsp; For internal use only</span>
+    </div>
+
+  </div>
+
+  <script>
+    new QRCode(document.getElementById('qrcode'), {
+      text: 'https://ustarman.github.io/duty-swap-app/admin',
+      width: 160,
+      height: 160,
+      colorDark: '#000000',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H,
+    })
+  </script>
+</body>
+</html>
