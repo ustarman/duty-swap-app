@@ -8,6 +8,12 @@
     <link rel="apple-touch-icon" href="/duty-swap-app/icon.jpg" />
     <title>Duty Swap</title>
     <script>
+      if (location.pathname.indexOf('/admin') !== -1) {
+        var mf = document.querySelector('link[rel="manifest"]');
+        if (mf) mf.setAttribute('href', '/duty-swap-app/manifest-admin.json');
+      }
+    </script>
+    <script>
       if (screen.orientation && screen.orientation.lock) {
         screen.orientation.lock('portrait').catch(function() {});
       }

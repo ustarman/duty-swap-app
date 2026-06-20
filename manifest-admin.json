@@ -1,12 +1,14 @@
 {
-  "name": "Duty Swap",
-  "short_name": "Duty Swap",
-  "id": "/duty-swap-app/",
+  "name": "Duty Swap — Admin",
+  "short_name": "Duty Admin",
+  "id": "/duty-swap-app/admin",
+  "description": "Brisbane Transport duty swap — admin console",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#ffffff",
   "theme_color": "#E11B22",
-  "start_url": "/duty-swap-app/",
+  "start_url": "/duty-swap-app/admin",
+  "scope": "/duty-swap-app/",
   "icons": [
     {
       "src": "/duty-swap-app/icon.jpg",
