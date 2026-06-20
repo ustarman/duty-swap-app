@@ -4,14 +4,20 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/duty-swap-app/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="manifest" href="/duty-swap-app/manifest.json" />
     <link rel="apple-touch-icon" href="/duty-swap-app/icon.jpg" />
     <title>Duty Swap</title>
     <script>
-      if (location.pathname.indexOf('/admin') !== -1) {
-        var mf = document.querySelector('link[rel="manifest"]');
-        if (mf) mf.setAttribute('href', '/duty-swap-app/manifest-admin.json');
-      }
+      (function () {
+        var isAdmin = location.pathname.indexOf('/admin') !== -1;
+        var mf = document.createElement('link');
+        mf.rel = 'manifest';
+        mf.href = isAdmin ? '/duty-swap-app/manifest-admin.json' : '/duty-swap-app/manifest.json';
+        document.head.appendChild(mf);
+        var tt = document.createElement('meta');
+        tt.name = 'apple-mobile-web-app-title';
+        tt.content = isAdmin ? 'Duty Admin' : 'Duty Swap';
+        document.head.appendChild(tt);
+      })();
     </script>
     <script>
       if (screen.orientation && screen.orientation.lock) {
