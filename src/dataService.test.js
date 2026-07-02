@@ -31,6 +31,19 @@ describe('createSwap', () => {
     expect(rec.id).toMatch(/^[0-9a-f-]{36}$/)
     expect(rec.driverADuty).toBe('BT100')
     expect(rec.status).toBe("Awaiting Driver B's Signature")
+    expect(rec.driverBSignature).toBeNull()
+  })
+
+  it('goes straight to supervisor approval when Driver B signs on the spot', async () => {
+    const signedDate = new Date().toISOString()
+    const rec = await App.createSwap({
+      ...baseSwap(),
+      driverBSignature: 'sigB',
+      driverBSignedDate: signedDate,
+    })
+    expect(rec.driverBSignature).toBe('sigB')
+    expect(rec.driverBSignedDate).toBe(signedDate)
+    expect(rec.status).toBe("Awaiting Supervisor's Signature")
   })
 })
 

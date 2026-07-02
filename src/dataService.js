@@ -67,6 +67,9 @@ export async function findDuplicateSwap(driverAName, driverADuty, driverBName, d
 }
 
 export async function createSwap(data) {
+  // When Driver B signs on the spot (on Driver A's phone), the swap is
+  // created fully signed and goes straight to supervisor approval.
+  const hasDriverBSignature = !!data.driverBSignature
   const record = {
     id: generateId(),
     title: generateRef(),
@@ -80,7 +83,9 @@ export async function createSwap(data) {
     week_type: data.weekType,
     driver_a_signature: data.driverASignature,
     driver_a_signed_date: data.driverASignedDate,
-    status: "Awaiting Driver B's Signature",
+    driver_b_signature: data.driverBSignature ?? null,
+    driver_b_signed_date: data.driverBSignedDate ?? null,
+    status: hasDriverBSignature ? "Awaiting Supervisor's Signature" : "Awaiting Driver B's Signature",
   }
 
   const { data: result, error } = await supabase

@@ -6,7 +6,7 @@ import Header from '../components/Header'
 import SectionDivider from '../components/SectionDivider'
 import SignaturePad from '../components/SignaturePad'
 import InputBox from '../components/InputBox'
-import { createSwap, findDuplicateSwap } from '../dataService'
+import { createSwap, findDuplicateSwap, getSupervisors, sendApprovalEmail } from '../dataService'
 import { normalizeDuty } from '../utils/helpers'
 import { AP_RED, CARD, INPUT_STYLE, FIELD_LABEL, BTN_PRIMARY } from '../theme'
 
@@ -71,10 +71,14 @@ function FieldGroup({ label, children }) {
 export default function Screen1() {
   const navigate = useNavigate()
   const sigRef = useRef(null)
+  const sigBRef = useRef(null)
   const submitLock = useRef(false)
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [form, setForm] = useState(getInitialForm)
+  const [bHere, setBHere] = useState(false)
+  const [done, setDone] = useState(false)
+  const [emailFailed, setEmailFailed] = useState(false)
 
   const set = field => e =>
     setForm(prev => ({
@@ -91,6 +95,7 @@ export default function Screen1() {
     if (!form.driverBName.trim()) { setError('Driver B Name is required'); return }
     if (!form.driverBDuty.trim()) { setError('Driver B Duty Number is required'); return }
     if (sigRef.current?.isEmpty()) { setError('Driver A signature is required'); return }
+    if (bHere && sigBRef.current?.isEmpty()) { setError('Driver B signature is required'); return }
 
     // Synchronous guard against double-tap (setSubmitting only applies on next render)
     if (submitLock.current) return
@@ -118,8 +123,21 @@ export default function Screen1() {
         driverBDuty: dutyB,
         driverASignature: sigRef.current.toDataURL(),
         driverASignedDate: new Date().toISOString(),
+        ...(bHere && {
+          driverBSignature: sigBRef.current.toDataURL(),
+          driverBSignedDate: new Date().toISOString(),
+        }),
       })
-      navigate(`/screen2?swapId=${record.id}`)
+
+      if (bHere) {
+        // Both drivers signed on the spot — notify supervisors, skip the share step
+        const supervisors = await getSupervisors()
+        const result = await sendApprovalEmail(record, supervisors)
+        if (!result?.ok) setEmailFailed(true)
+        setDone(true)
+      } else {
+        navigate(`/screen2?swapId=${record.id}`)
+      }
     } catch (err) {
       if (err?.code === 'DUPLICATE_SWAP') {
         setError('An identical swap request already exists for this week. Please check with your supervisor or admin.')
@@ -130,6 +148,44 @@ export default function Screen1() {
       submitLock.current = false
       setSubmitting(false)
     }
+  }
+
+  const startNew = () => {
+    setForm({ ...EMPTY_FORM })
+    setBHere(false)
+    setEmailFailed(false)
+    setDone(false)
+  }
+
+  if (done) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100svh' }}>
+        <Header />
+        <div style={{ flex: 1, padding: '1rem', paddingBottom: '2rem' }}>
+          <div style={CARD}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1.5rem 0', gap: '1.25rem' }}>
+              <p style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-color)', textAlign: 'center' }}>
+                ✅ Signed!{!emailFailed && ' Supervisors have been notified.'}
+              </p>
+              {emailFailed && (
+                <p style={{
+                  fontSize: 13, fontWeight: 600, color: '#92600a',
+                  background: '#FFF8E5', border: '1px solid #F2DC9F',
+                  borderRadius: 8, padding: '10px 14px',
+                  textAlign: 'center', lineHeight: 1.5,
+                }}>
+                  ⚠️ However, the notification email could not be sent.<br />
+                  Please contact a supervisor directly.
+                </p>
+              )}
+              <button onClick={startNew} style={{ ...BTN_PRIMARY, maxWidth: 240 }}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -260,6 +316,33 @@ export default function Screen1() {
               />
             </InputBox>
           </FieldGroup>
+
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer', userSelect: 'none', marginTop: 4 }}>
+            <input
+              type="checkbox"
+              checked={bHere}
+              onChange={e => setBHere(e.target.checked)}
+              style={{ width: 18, height: 18, accentColor: AP_RED, marginTop: 1, flexShrink: 0 }}
+            />
+            <span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-color)', display: 'block' }}>
+                Driver B is here with me
+              </span>
+              <span style={{ fontSize: 12, color: 'var(--subtext-color)' }}>
+                Collect Driver B's signature now.
+              </span>
+            </span>
+          </label>
+
+          {bHere && (
+            <div style={{ marginTop: '0.75rem' }}>
+              <span style={FIELD_LABEL}>Signature</span>
+              <p style={{ fontSize: 12, color: 'var(--subtext-color)', margin: '0 0 6px' }}>
+                I, <strong>{form.driverBName.trim() || 'Driver B'}</strong>, agree to this duty swap.
+              </p>
+              <SignaturePad ref={sigBRef} />
+            </div>
+          )}
         </div>
 
         {error && (
