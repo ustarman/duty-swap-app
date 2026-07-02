@@ -28,3 +28,14 @@
 - 푸시 전 `npm run build`로 로컬 빌드 검증 필수 (과거 미커밋 import로 CI 3연속 실패 사례 있음).
 - 프리필 연동: Swap Board(duty-swap-board-metro)가 URL 파라미터로 이 앱의
   /screen1에 데이터를 전달함. Screen1.jsx의 getInitialForm() 수정 시 주의.
+
+## 이메일 / DB 보안 구조 (2026-07-02 적용)
+- 이메일은 Edge Function `send-approval-email-v2`가 담당: 클라이언트는 { type, swapId }만
+  전달하고, 스왑 내용·수신자 목록은 함수가 서버 측(service role)에서 조회한다.
+  Brevo 응답을 검증해 전부 실패 시 500을 반환 → 앱의 경고 배너가 작동한다.
+- 구버전 함수 `send-approval-email-`는 롤백용으로 배포 유지 중 (클라이언트는 미사용).
+- `shift_swap_requests`에 RLS 적용됨 (정책: supabase/rls-policies.sql 참고).
+  anon 키로 DELETE 불가, Completed 레코드 UPDATE 불가. 테스트 레코드 정리는
+  Supabase 대시보드 SQL Editor 또는 Management API로만 가능.
+- 안전한 이메일 테스트 방법: 함수 사본을 배포해 수신자를 본인 이메일로 강제
+  (recipients.forEach(r => r.email = '...')) 후 테스트, 끝나면 함수 삭제.
