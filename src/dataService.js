@@ -223,10 +223,13 @@ export async function getAllActiveRecipients() {
   return data.map(s => ({ name: s.name, email: s.email }))
 }
 
-export async function sendApprovalEmail(swap, supervisors) {
+// v2 function loads the swap and the recipient list server-side and verifies
+// every Brevo response — callers only pass the swap id. The second argument
+// is kept for call-site compatibility but no longer used.
+export async function sendApprovalEmail(swap, _supervisors) {
   try {
-    const { data, error } = await supabase.functions.invoke('send-approval-email-', {
-      body: { type: 'approval', swap, supervisors },
+    const { data, error } = await supabase.functions.invoke('send-approval-email-v2', {
+      body: { type: 'approval', swapId: swap.id },
     })
     if (error) { console.error('Approval email error:', error); return { ok: false } }
     return { ok: true, data }
@@ -236,10 +239,10 @@ export async function sendApprovalEmail(swap, supervisors) {
   }
 }
 
-export async function sendCompletionEmail(swap, recipients) {
+export async function sendCompletionEmail(swap, _recipients) {
   try {
-    const { data, error } = await supabase.functions.invoke('send-approval-email-', {
-      body: { type: 'completion', swap, supervisors: recipients },
+    const { data, error } = await supabase.functions.invoke('send-approval-email-v2', {
+      body: { type: 'completion', swapId: swap.id },
     })
     if (error) { console.error('Completion email error:', error); return { ok: false } }
     return { ok: true, data }

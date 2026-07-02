@@ -89,6 +89,7 @@ export default function Screen1() {
   const handleSubmit = async () => {
     setError('')
     if (!form.weekCommencing) { setError('Week Commencing is required'); return }
+    if (!form.weekType) { setError('Week Type is required'); return }
 
     if (!form.driverAName.trim()) { setError('Driver A Name is required'); return }
     if (!form.driverADuty.trim()) { setError('Driver A Duty Number is required'); return }
