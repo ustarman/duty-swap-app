@@ -195,6 +195,19 @@ export default function Screen1() {
 
       <div style={{ flex: 1, padding: '1rem', paddingBottom: '2rem' }}>
 
+        {/* Trial-stage disclaimer */}
+        <div style={{
+          background: '#FFF8E5', border: '1px solid #F2DC9F', borderRadius: 8,
+          padding: '10px 14px', marginBottom: '1rem',
+        }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: '#92600a', margin: 0, lineHeight: 1.5 }}>
+            ⚠️ Trial Stage Only
+          </p>
+          <p style={{ fontSize: 12.5, color: '#92600a', margin: '2px 0 0', lineHeight: 1.5 }}>
+            This process is currently under consultation. Please <strong>also</strong> submit a paper Duty Swap Form <strong>in addition to this app</strong> until further notice.
+          </p>
+        </div>
+
         {/* Schedule card */}
         <div style={CARD}>
           <FieldGroup label="Week Commencing">
