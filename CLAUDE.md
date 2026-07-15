@@ -37,5 +37,11 @@
 - `shift_swap_requests`에 RLS 적용됨 (정책: supabase/rls-policies.sql 참고).
   anon 키로 DELETE 불가, Completed 레코드 UPDATE 불가. 테스트 레코드 정리는
   Supabase 대시보드 SQL Editor 또는 Management API로만 가능.
+- `supervisors`에도 RLS 적용됨 (2026-07-16): anon은 SELECT만, 쓰기 불가.
+  Admin "Mailing List" 탭의 supervisor 추가/수정/삭제는 Edge Function
+  `admin-supervisors`가 처리 — mailing PIN을 서버 Secret(MAILING_ADMIN_PIN)과
+  대조 후 service role로 쓰기. mailing PIN은 더 이상 번들에 포함되지 않음
+  (VITE_MAILING_PIN 미사용). PIN 교체는 `supabase secrets set MAILING_ADMIN_PIN=`.
+  바깥 Admin 게이트(VITE_ADMIN_PIN)는 UI 진입용 클라이언트 체크로 유지.
 - 안전한 이메일 테스트 방법: 함수 사본을 배포해 수신자를 본인 이메일로 강제
   (recipients.forEach(r => r.email = '...')) 후 테스트, 끝나면 함수 삭제.

@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import StatusBadge from '../components/StatusBadge'
-import { getAllSwaps, getAllSupervisors, addSupervisor, updateSupervisor, deleteSupervisor } from '../dataService'
+import { getAllSwaps, getAllSupervisors, addSupervisor, updateSupervisor, deleteSupervisor, verifyMailingPin } from '../dataService'
 import { formatDate, formatWeekType } from '../utils/helpers'
 import { AP_RED, CARD, INPUT_BOX, INPUT_LABEL, INPUT_STYLE, BTN_PRIMARY } from '../theme'
 
 const CORRECT_PIN = import.meta.env.VITE_ADMIN_PIN ?? '1234'
-const MAILING_PIN = import.meta.env.VITE_MAILING_PIN ?? '0000'
+// The mailing-list PIN is verified server-side (admin-supervisors function),
+// so it is intentionally no longer read from the client bundle.
 
 const FILTERS = [
   { label: 'All', value: 'all' },
@@ -17,37 +18,48 @@ const FILTERS = [
 ]
 
 // ── PIN Gate ──────────────────────────────────────────────────────────────────
-function PinGate({ onUnlock, correctPin, sessionKey, title = 'Admin PIN' }) {
+function PinGate({ onUnlock, correctPin, verifyFn, pinLength = 4, sessionKey, title = 'Admin PIN' }) {
   const [pin, setPin] = useState('')
   const [error, setError] = useState(false)
+  const [checking, setChecking] = useState(false)
+  const expectedLen = correctPin ? correctPin.length : pinLength
 
-  const handleDigit = d => {
-    if (pin.length >= 6) return
-    const next = pin + d
-    setPin(next)
-    setError(false)
-    if (next.length === correctPin.length) {
-      if (next === correctPin) {
-        sessionStorage.setItem(sessionKey, '1')
-        onUnlock()
-      } else {
-        setTimeout(() => { setPin(''); setError(true) }, 300)
-      }
+  const submit = async candidate => {
+    if (verifyFn) {
+      // Server-side verification (mailing-list PIN)
+      setChecking(true)
+      let ok = false
+      try { ok = await verifyFn(candidate) } catch { ok = false }
+      setChecking(false)
+      if (ok) { sessionStorage.setItem(sessionKey, '1'); onUnlock(candidate) }
+      else { setPin(''); setError(true) }
+    } else {
+      // Local comparison (outer Admin UI gate)
+      if (candidate === correctPin) { sessionStorage.setItem(sessionKey, '1'); onUnlock(candidate) }
+      else { setTimeout(() => { setPin(''); setError(true) }, 300) }
     }
   }
 
-  const handleDelete = () => { setPin(p => p.slice(0, -1)); setError(false) }
+  const handleDigit = d => {
+    if (pin.length >= 6 || checking) return
+    const next = pin + d
+    setPin(next)
+    setError(false)
+    if (next.length === expectedLen) submit(next)
+  }
+
+  const handleDelete = () => { if (!checking) { setPin(p => p.slice(0, -1)); setError(false) } }
 
   const digits = ['1','2','3','4','5','6','7','8','9','','0','⌫']
 
   const inner = (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
         <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-color)', marginBottom: 8 }}>{title}</p>
-        <p style={{ fontSize: 13, color: 'var(--subtext-color)', marginBottom: 28 }}>Enter your PIN to continue</p>
+        <p style={{ fontSize: 13, color: 'var(--subtext-color)', marginBottom: 28 }}>{checking ? 'Verifying…' : 'Enter your PIN to continue'}</p>
 
         {/* Dots */}
         <div style={{ display: 'flex', gap: 14, marginBottom: 32 }}>
-          {Array.from({ length: CORRECT_PIN.length }).map((_, i) => (
+          {Array.from({ length: expectedLen }).map((_, i) => (
             <div key={i} style={{
               width: 14, height: 14, borderRadius: '50%',
               background: i < pin.length ? (error ? '#ef4444' : AP_RED) : 'var(--card-border)',
@@ -206,17 +218,18 @@ function SwapRequestsTab() {
 
 // ── Mailing List Tab ──────────────────────────────────────────────────────────
 function MailingListTab() {
+  // Unlocked only when we still hold the verified PIN needed for write calls.
   const [mailingUnlocked, setMailingUnlocked] = useState(
-    sessionStorage.getItem('mailing_unlocked') === '1'
+    sessionStorage.getItem('mailing_unlocked') === '1' && !!sessionStorage.getItem('mailing_pin')
   )
 
   if (!mailingUnlocked) {
     return (
       <PinGate
         title="Mailing List PIN"
-        correctPin={MAILING_PIN}
+        verifyFn={verifyMailingPin}
         sessionKey="mailing_unlocked"
-        onUnlock={() => setMailingUnlocked(true)}
+        onUnlock={pin => { sessionStorage.setItem('mailing_pin', pin); setMailingUnlocked(true) }}
       />
     )
   }
@@ -237,11 +250,18 @@ function MailingListContent() {
     getAllSupervisors().then(data => { setSupervisors(data); setLoading(false) })
   }, [])
 
+  const mailingPin = () => sessionStorage.getItem('mailing_pin') || ''
+
   const toggle = async (id, field, current) => {
     setSaving(id + field)
     try {
-      await updateSupervisor(id, { [field]: !current })
+      await updateSupervisor(id, { [field]: !current }, mailingPin())
       setSupervisors(prev => prev.map(s => s.id === id ? { ...s, [field]: !current } : s))
+    } catch {
+      // Write failed — reload from DB so the UI reflects the true state
+      alert('Update failed. Please try again.')
+      const fresh = await getAllSupervisors()
+      setSupervisors(fresh)
     } finally {
       setSaving(null)
     }
@@ -249,8 +269,14 @@ function MailingListContent() {
 
   const handleDelete = async id => {
     if (!confirm('Remove this person from the mailing list?')) return
-    await deleteSupervisor(id)
-    setSupervisors(prev => prev.filter(s => s.id !== id))
+    try {
+      await deleteSupervisor(id, mailingPin())
+      setSupervisors(prev => prev.filter(s => s.id !== id))
+    } catch {
+      alert('Delete failed. Please try again.')
+      const fresh = await getAllSupervisors()
+      setSupervisors(fresh)
+    }
   }
 
   const handleAdd = async () => {
@@ -259,7 +285,7 @@ function MailingListContent() {
     if (!newForm.email.trim()) { setAddError('Email is required'); return }
     setAdding(true)
     try {
-      await addSupervisor(newForm)
+      await addSupervisor(newForm, mailingPin())
       const updated = await getAllSupervisors()
       setSupervisors(updated)
       setNewForm({ name: '', email: '', role: '', authorityToSign: false })

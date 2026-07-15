@@ -181,35 +181,55 @@ export async function getAllSupervisors() {
   }))
 }
 
-export async function addSupervisor(data) {
-  const { data: result, error } = await supabase
-    .from('supervisors')
-    .insert({
-      name: data.name,
-      email: data.email,
-      role: data.role ?? null,
-      authority_to_sign: data.authorityToSign ?? false,
-      active: true,
+// Supervisor writes go through the admin-supervisors edge function, which
+// checks the mailing-list PIN server-side and writes with the service role.
+// The supervisors table has RLS enabled, so direct anon writes are blocked.
+
+// PIN-only check so the Admin Mailing List tab can gate itself.
+export async function verifyMailingPin(pin) {
+  try {
+    const { data, error } = await supabase.functions.invoke('admin-supervisors', {
+      body: { pin, action: 'verify' },
     })
-    .select()
-    .single()
-  if (error) throw error
-  return result
+    if (error) return false
+    return !!data?.ok
+  } catch {
+    return false
+  }
 }
 
-export async function updateSupervisor(id, updates) {
-  const dbUpdates = {}
-  if (updates.authorityToSign !== undefined) dbUpdates.authority_to_sign = updates.authorityToSign
-  if (updates.active !== undefined) dbUpdates.active = updates.active
-  if (updates.name !== undefined) dbUpdates.name = updates.name
-  if (updates.email !== undefined) dbUpdates.email = updates.email
-  const { error } = await supabase.from('supervisors').update(dbUpdates).eq('id', id)
+export async function addSupervisor(data, pin) {
+  const { data: res, error } = await supabase.functions.invoke('admin-supervisors', {
+    body: {
+      pin,
+      action: 'add',
+      data: {
+        name: data.name,
+        email: data.email,
+        role: data.role ?? null,
+        authorityToSign: data.authorityToSign ?? false,
+      },
+    },
+  })
   if (error) throw error
+  if (res?.error) throw new Error(res.error)
+  return res.supervisor
 }
 
-export async function deleteSupervisor(id) {
-  const { error } = await supabase.from('supervisors').delete().eq('id', id)
+export async function updateSupervisor(id, updates, pin) {
+  const { data: res, error } = await supabase.functions.invoke('admin-supervisors', {
+    body: { pin, action: 'update', data: { id, updates } },
+  })
   if (error) throw error
+  if (res?.error) throw new Error(res.error)
+}
+
+export async function deleteSupervisor(id, pin) {
+  const { data: res, error } = await supabase.functions.invoke('admin-supervisors', {
+    body: { pin, action: 'delete', data: { id } },
+  })
+  if (error) throw error
+  if (res?.error) throw new Error(res.error)
 }
 
 export async function getAllActiveRecipients() {

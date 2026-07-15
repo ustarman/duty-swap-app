@@ -151,9 +151,34 @@ export const supabase = {
     return Promise.resolve({ data: null, error: null })
   },
   functions: {
-    invoke(name, _opts) {
+    invoke(name, opts) {
       if (name.includes('email')) return _config.emailWillFail ? Promise.resolve({ data: null, error: { message: 'email down' } }) : Promise.resolve({ data: { success: true }, error: null })
       if (name === 'send-push') return _config.pushWillFail ? Promise.resolve({ data: null, error: { message: 'push down' } }) : Promise.resolve({ data: { ok: true }, error: null })
+      if (name === 'admin-supervisors') {
+        const { action, data } = opts?.body ?? {}
+        if (action === 'verify') return Promise.resolve({ data: { ok: true }, error: null })
+        if (action === 'add') {
+          const ids = _db.supervisors.map(x => (typeof x.id === 'number' ? x.id : 0))
+          const row = { id: (ids.length ? Math.max(...ids) : 0) + 1, name: data.name, email: data.email, role: data.role ?? null, authority_to_sign: !!data.authorityToSign, active: true }
+          _db.supervisors.push(row)
+          return Promise.resolve({ data: { ok: true, supervisor: row }, error: null })
+        }
+        if (action === 'update') {
+          const row = _db.supervisors.find(s => s.id === data.id)
+          if (row) {
+            const u = data.updates ?? {}
+            if (u.authorityToSign !== undefined) row.authority_to_sign = u.authorityToSign
+            if (u.active !== undefined) row.active = u.active
+            if (u.name !== undefined) row.name = u.name
+            if (u.email !== undefined) row.email = u.email
+          }
+          return Promise.resolve({ data: { ok: true }, error: null })
+        }
+        if (action === 'delete') {
+          _db.supervisors = _db.supervisors.filter(s => s.id !== data.id)
+          return Promise.resolve({ data: { ok: true }, error: null })
+        }
+      }
       return Promise.resolve({ data: null, error: null })
     },
   },
