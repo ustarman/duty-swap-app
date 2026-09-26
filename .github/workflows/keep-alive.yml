@@ -5,13 +5,36 @@ on:
     - cron: '0 18 * * 1,4'   # 매주 월·목 18:00 UTC (브리즈번 새벽 4시)
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Ping Supabase to prevent auto-pause
+        # --fail: a paused/unreachable project fails the run, so GitHub emails the owner.
         run: |
-          curl -s -o /dev/null -w "Supabase ping: HTTP %{http_code}\n" \
+          curl -sS --fail --retry 3 --retry-delay 10 -o /dev/null \
+            -w "Supabase ping: HTTP %{http_code}\n" \
             "${{ secrets.VITE_SUPABASE_URL }}/rest/v1/shift_swap_requests?select=id&limit=1" \
             -H "apikey: ${{ secrets.VITE_SUPABASE_ANON_KEY }}" \
             -H "Authorization: Bearer ${{ secrets.VITE_SUPABASE_ANON_KEY }}"
+
+      - name: Keep repo active so GitHub never auto-disables this schedule
+        # GitHub disables scheduled workflows after 60 days without commits;
+        # push one tiny commit only once the repo has been idle for 45+ days.
+        if: always()
+        run: |
+          idle_days=$(( ( $(date +%s) - $(git log -1 --format=%ct) ) / 86400 ))
+          echo "Days since last commit: $idle_days"
+          if [ "$idle_days" -ge 45 ]; then
+            date -u +'%Y-%m-%dT%H:%M:%SZ' > .github/keep-alive-stamp.txt
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add .github/keep-alive-stamp.txt
+            git commit -m "chore: keep-alive stamp (prevents scheduled workflow auto-disable)"
+            git push
+          fi
